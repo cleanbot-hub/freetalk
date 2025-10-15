@@ -261,25 +261,39 @@ function renderPost(id, data){
     const pids = data.images.map(img => img.pid);
     el.querySelectorAll('.thumb img').forEach((imgEl, idx)=>{ imgEl.style.cursor='zoom-in'; imgEl.addEventListener('click', ()=> openViewer(pids, idx)); });
   }
-  // 좋아요
-  const likeBtn=el.querySelector('[data-like="btn"]'); const likeCntEl=el.querySelector('[data-like="cnt"]');
-  const likeRef=doc(db,'communityPosts',id,'likes',auth.currentUser?.uid||'x');
-  onSnapshot(likeRef,(s)=>{ s.exists()? likeBtn.classList.add('on'):likeBtn.classList.remove('on'); });
-  likeBtn.onclick=async()=>{
-    try{
-      const s=await getDoc(likeRef);
-      if(s.exists()){
-        await deleteDoc(likeRef);
-        await updateDoc(doc(db,'communityPosts',id),{likesCount:(data.likesCount||0)-1});
-        data.likesCount=(data.likesCount||0)-1;
-      }else{
-        await setDoc(likeRef,{ at:serverTimestamp() });
-        await updateDoc(doc(db,'communityPosts',id),{likesCount:(data.likesCount||0)+1});
-        data.likesCount=(data.likesCount||0)+1;
-      }
-      likeCntEl.textContent=data.likesCount||0;
-    }catch(e){ err(e); }
-  };
+ // 좋아요
+const likeBtn   = el.querySelector('[data-like="btn"]');
+const likeCntEl = el.querySelector('[data-like="cnt"]');
+
+// 내 좋아요 문서와 likes 컬렉션 참조
+const likeRef     = doc(db, 'communityPosts', id, 'likes', auth.currentUser?.uid || 'x');
+const likesColRef = collection(db, 'communityPosts', id, 'likes');
+
+// 내가 좋아요 눌렀는지(하트 on/off)
+onSnapshot(likeRef, (s) => {
+  s.exists() ? likeBtn.classList.add('on') : likeBtn.classList.remove('on');
+});
+
+// 총 좋아요 수 실시간 표시
+onSnapshot(likesColRef, (ss) => {
+  likeCntEl.textContent = String(ss.size);
+});
+
+// 토글(문서 생성/삭제만 수행; 부모 문서 업데이트 없음)
+likeBtn.onclick = async () => {
+  try {
+    const s = await getDoc(likeRef);
+    if (s.exists()) {
+      await deleteDoc(likeRef);
+    } else {
+      await setDoc(likeRef, { at: serverTimestamp() });
+    }
+    // likeCntEl은 위 onSnapshot(likesColRef)로 자동 갱신됨
+  } catch (e) {
+    err(e);
+  }
+};
+
   // 수정/삭제
   el.querySelector('[data-action="edit"]')?.addEventListener('click',()=>openModal('edit',id,data));
   el.querySelector('[data-action="del"]')?.addEventListener('click', async ()=>{ if(!confirm(isAdmin?'이 게시글을 삭제할까요? (관리자)':'삭제할까요?')) return; try{ await deleteDoc(doc(db,'communityPosts',id)); }catch(e){ err(e); } });
