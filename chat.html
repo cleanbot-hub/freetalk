@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>채팅 • Freetalk</title>
+<style>
+:root{ --bg:#f6f7fb; --ink:#0f1724; --muted:#6b7280; --border:#e5e7eb; --accent:#6d28d9; --accent-2:#7c3aed; }
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif}
+.top{max-width:1080px;margin:12px auto;padding:0 12px;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.menu{display:flex;gap:8px}.link{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;text-decoration:none;color:var(--ink)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 12px}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+.panel{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,.06);padding:12px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.count{font-size:13px;color:var(--muted)} .toolbar{display:flex;gap:8px;align-items:center}
+.btn-mini{padding:8px 10px;border:1px solid var(--border);background:#fff;border-radius:10px;cursor:pointer}
+.btn-danger{background:#ef4444;color:#fff;border:0}
+.chat{display:flex;flex-direction:column;height:70vh;min-height:520px}
+.stream{flex:1;overflow:auto;padding:12px;border:1px solid var(--border);border-radius:12px;background:#fafafa;display:flex;flex-direction:column;gap:8px}
+.stream::-webkit-scrollbar{width:8px}.stream::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:8px}
+.bubble{display:inline-flex;flex-direction:column;gap:4px;width:fit-content;max-width:68%;padding:10px 12px;border-radius:16px;line-height:1.45;word-break:break-word;white-space:pre-wrap;background:#fff;border:1px solid var(--border)}
+.bubble .name{font-size:12px;font-weight:600;color:var(--muted)} .bubble .text{font-size:15px} .bubble .time{font-size:11px;color:#9ca3af;align-self:flex-end}
+.bubble.other{align-self:flex-start;border-top-left-radius:6px}.bubble.mine{align-self:flex-end;border-top-right-radius:6px;box-shadow:0 6px 14px rgba(109,40,217,0.08)}
+.input{display:flex;gap:8px;margin-top:10px}.field{flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.field:focus{outline:none;border-color:#c7d2fe;box-shadow:0 0 0 4px rgba(99,102,241,.12)} .btn{padding:10px 14px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+.btn:hover{background:var(--accent-2)} @media (max-width:880px){ .grid{grid-template-columns:1fr} }
+
+@media (max-width:768px){
+  .wrap{padding:12px;}
+  .toolbar{flex-direction:column;align-items:flex-start;gap:8px;}
+  .field{width:100%;font-size:16px;}
+  .btn{padding:10px 12px;font-size:14px;}
+}
+body{padding-bottom:env(safe-area-inset-bottom);-webkit-text-size-adjust:100%;}
+</style>
+</head>
+<body>
+<div class="top">
+  <strong>Freetalk</strong>
+  <div class="menu">
+    <a class="link" href="community.html">커뮤니티</a>
+    <a class="link" href="index.html">메인</a>
+    <button id="logout" class="link">로그아웃</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="grid">
+    <div class="panel">
+      <div class="header">
+        <h2 style="margin:0">채팅</h2>
+        <div class="toolbar">
+          <button id="btn-clear" class="btn-mini btn-danger">채팅 초기화</button>
+          <!-- <div class="count" id="presence">현재 접속자 수: 0명</div> -->
+        </div>
+      </div>
+      <div class="chat">
+        <div id="list" class="stream"></div>
+        <div class="input">
+          <input id="text" class="field" placeholder="메시지를 입력하고 Enter 또는 보내기" disabled>
+          <button id="send" class="btn" disabled>보내기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import {
+  getFirestore, doc, onSnapshot, serverTimestamp, collection, addDoc,
+  orderBy, query, limit, getDocs, writeBatch, getDoc, deleteDoc, setDoc
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import { getDatabase, ref, set as rset, onValue, onDisconnect, serverTimestamp as rtdbNow } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+const cfg = {
+  apiKey: "AIzaSyACn_-2BLztKYmBKXtrKNtMsC-2Y238oug",
+  authDomain: "woori-1ecf5.firebaseapp.com",
+  projectId: "woori-1ecf5",
+  storageBucket: "woori-1ecf5.firebasestorage.app",
+  messagingSenderId: "1073097361525",
+  appId: "1:1073097361525:web:3218ced6a040aaaf4d503c",
+  databaseURL: "https://woori-1ecf5-default-rtdb.firebaseio.com"
+};
+
+const app=initializeApp(cfg);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const rtdb=getDatabase(app);
+
+const $=id=>document.getElementById(id);
+const list=$('list'), textEl=$('text'), sendEl=$('send'), presenceEl=$('presence'), btnClear=$('btn-clear');
+const fmt = ts=>{ try{ const d=ts?.toDate?.()||new Date(); return d.toLocaleString(); }catch{ return '' } };
+const err = e=>{ console.error(e); alert('오류: '+(e.message||e.code)); };
+
+async function ensureNickname(u){
+  const uRef=doc(db,'users',u.uid);
+  const snap=await getDoc(uRef);
+  let nick=snap.data()?.nickname?.trim();
+  if(!nick){
+    nick=u.displayName?.trim()||(u.email?u.email.split('@')[0]:'');
+    while(!nick||nick.length<2||nick.length>20){
+      nick=(prompt('처음 오셨네요! 사용할 별명을 입력하세요 (2~20자)')||'').trim();
+      if(nick===null)break;
+    }
+    if(!nick)nick='손님';
+    await setDoc(uRef,{nickname:nick},{merge:true});
+    try{await updateProfile(u,{displayName:nick});}catch{}
+  }
+  return nick;
+}
+
+let me=null,myNick='사용자',myPresenceRef=null;
+let stopUsers=null,stopMsgs=null;
+
+onAuthStateChanged(auth,async(u)=>{
+  if(!u)return location.replace('login.html');
+  me=u;
+  myNick=await ensureNickname(u);
+
+  // presence 등록
+  myPresenceRef=ref(rtdb,`presence/global/${u.uid}`);
+  await rset(myPresenceRef,{nickname:myNick,at:rtdbNow()});
+  onDisconnect(myPresenceRef).remove();
+  onValue(ref(rtdb,'presence/global'),(snap)=>{
+    const obj=snap.val()||{};
+    presenceEl.textContent=`현재 접속자 수: ${Object.keys(obj).length}명`;
+  });
+
+  // 메시지 실시간 구독
+  const q=query(collection(db,'rooms','global','messages'),orderBy('createdAt','asc'),limit(500));
+  stopMsgs=onSnapshot(q,(snap)=>{
+    const stick=(list.scrollHeight-list.scrollTop-list.clientHeight)<20;
+    list.innerHTML='';
+    snap.forEach(mDoc=>{
+      const m=mDoc.data();
+      const mine=m.senderUid===me.uid;
+      const bubble=document.createElement('div');
+      bubble.className='bubble '+(mine?'mine':'other');
+      const name=document.createElement('div');
+      name.className='name'; name.textContent=(m.senderName||'익명');
+      const body=document.createElement('div');
+      body.className='text'; body.textContent=m.text||'';
+      const time=document.createElement('div');
+      time.className='time'; time.textContent=fmt(m.createdAt);
+      bubble.append(name,body);
+
+      if(mine){
+        const del=document.createElement('button');
+        del.textContent='삭제';
+        del.style.cssText='margin-left:8px;border:0;background:#ef4444;color:#fff;border-radius:8px;padding:2px 8px;cursor:pointer';
+        del.onclick=async()=>{if(confirm('삭제할까요?'))await deleteDoc(doc(db,'rooms','global','messages',mDoc.id));};
+        const meta=document.createElement('div');
+        meta.style.display='flex'; meta.style.alignItems='center'; meta.style.gap='6px';
+        meta.append(time,del); bubble.append(meta);
+      }else bubble.append(time);
+
+      list.appendChild(bubble);
+    });
+    if(stick) list.scrollTop=list.scrollHeight;
+  });
+
+  textEl.disabled=false; sendEl.disabled=false; textEl.focus();
+});
+
+async function sendMsg(){
+  const t=textEl.value.trim(); if(!t)return;
+  try{
+    await addDoc(collection(db,'rooms','global','messages'),{
+      text:t,senderUid:auth.currentUser.uid,senderName:myNick,createdAt:serverTimestamp()
+    });
+    textEl.value=''; list.scrollTop=list.scrollHeight;
+  }catch(e){err(e);}
+}
+sendEl.onclick=sendMsg;
+textEl.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); }
+});
+
+btnClear.onclick=async()=>{
+  try{
+    const amAdmin=(await getDoc(doc(db,'admins',auth.currentUser.uid))).exists();
+    const ok=confirm(amAdmin?'정말 전체 채팅을 삭제할까요?':'내 메시지만 삭제합니다. 진행할까요?');
+    if(!ok)return;
+    const q=query(collection(db,'rooms','global','messages'),limit(500));
+    const snap=await getDocs(q); const batch=writeBatch(db);
+    snap.forEach(d=>{const m=d.data(); if(amAdmin||m.senderUid===auth.currentUser.uid)batch.delete(d.ref);});
+    await batch.commit(); alert(amAdmin?'모든 메시지를 삭제했습니다.':'내 메시지를 삭제했습니다.');
+  }catch(e){err(e);}
+};
+
+$('logout').onclick=async()=>{
+  try{
+    if(stopUsers)stopUsers(); if(stopMsgs)stopMsgs();
+    if(myPresenceRef) await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js")
+      .then(({remove})=>remove(myPresenceRef)).catch(()=>{});
+    await signOut(auth);
+  }catch(e){err(e);}
+};
+</script>
+</body>
+</html>

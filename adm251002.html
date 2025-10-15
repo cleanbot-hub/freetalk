@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>관리자 대시보드 • Freetalk</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#f7f8fb;--ink:#0f1724;--muted:#6b7280;--accent:#6d28d9;--accent2:#7c3aed;--danger:#ef4444;--bd:#e5e7eb;--radius:12px;--max:1060px}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif}
+    .wrap{max-width:var(--max);margin:18px auto;padding:12px}
+    header.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .brand{display:flex;gap:10px;align-items:center;text-decoration:none;color:inherit}
+    .nav{display:flex;gap:8px;align-items:center}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:#fff;color:#111;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff;border:0}
+    .btn.danger{background:var(--danger);color:#fff;border:0}
+    .btn.ghost{background:#fff}
+    .btn[disabled]{opacity:.55;cursor:not-allowed}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--bd);background:#f8fafc;font-size:12px;color:#374151}
+    .tabs{display:flex;gap:8px;margin:8px 0 12px;flex-wrap:wrap}
+    .tab{padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:#fff;cursor:pointer}
+    .tab.active{background:var(--accent);color:#fff;border-color:transparent}
+    .card{background:#fff;border:1px solid var(--bd);border-radius:var(--radius);box-shadow:0 8px 26px rgba(2,6,23,.06);padding:14px}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:flex-start;border:1px solid #eef;border-radius:10px;padding:12px}
+    .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .title{font-weight:700}
+    .content{white-space:pre-wrap;line-height:1.55}
+    .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px}
+    .empty{color:var(--muted);text-align:center;padding:18px;background:#fafbff;border-radius:10px;border:1px dashed #e5e7eb}
+    .grid2{display:grid;grid-template-columns:1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    @media(min-width:900px){ .grid2{grid-template-columns:1fr 1fr} .grid3{grid-template-columns:1fr 1fr 1fr} }
+    .muted{color:var(--muted);font-size:13px}
+    .field{padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff;width:100%}
+    .row-compact{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .warn{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;padding:8px 10px;font-size:13px}
+    .ok{background:#ecfeff;border:1px solid #67e8f9;color:#155e75;border-radius:10px;padding:8px 10px;font-size:13px}
+    body{ padding-bottom:env(safe-area-inset-bottom); -webkit-text-size-adjust:100%; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/index.html"><strong>Freetalk</strong> <span class="badge">관리자 대시보드</span></a>
+    <nav class="nav">
+      <a class="btn" href="/community.html">커뮤니티</a>
+      <a class="btn" href="/chat.html">채팅</a>
+      <button id="logout" class="btn">로그아웃</button>
+    </nav>
+  </header>
+
+  <div class="tabs">
+    <button id="tab-posts" class="tab active">게시글 관리</button>
+    <button id="tab-chat"  class="tab">채팅 관리</button>
+    <button id="tab-comments" class="tab">댓글/답글 관리</button>
+    <button id="tab-users" class="tab">사용자 검색/밴</button>
+    <button id="tab-admin" class="tab">관리자 설정</button>
+  </div>
+
+  <!-- 게시글 -->
+  <section id="panel-posts" class="card">
+    <div class="toolbar">
+      <div class="row-compact">
+        <strong>게시글</strong>
+        <span id="post-count" class="badge">0</span>
+        <span class="muted">(페이지당 10개)</span>
+      </div>
+      <div class="row-compact">
+        <button id="post-del-page" class="btn danger">이 페이지 모두 삭제</button>
+        <button id="post-del-all"  class="btn danger">전체 게시글 삭제(위험)</button>
+        <div class="pager">
+          <button id="post-prev" class="btn">이전</button>
+          <span class="badge" id="post-page">1 / 1</span>
+          <button id="post-next" class="btn">다음</button>
+        </div>
+      </div>
+    </div>
+    <div id="post-list" class="list"><div class="empty">불러오는 중…</div></div>
+  </section>
+
+  <!-- 채팅 -->
+  <section id="panel-chat" class="card" style="display:none">
+    <div class="toolbar">
+      <div class="row-compact">
+        <strong>채팅 메시지</strong>
+        <span class="muted">개별 삭제 또는 전체 삭제</span>
+      </div>
+      <div class="row-compact">
+        <button id="chat-del-all" class="btn danger">전체 채팅 삭제(위험)</button>
+        <div class="pager">
+          <button id="chat-prev" class="btn">이전</button>
+          <span class="badge" id="chat-page">1</span>
+          <button id="chat-next" class="btn">다음</button>
+        </div>
+      </div>
+    </div>
+    <div id="chat-list" class="list"><div class="empty">불러오는 중…</div></div>
+  </section>
+
+  <!-- 댓글/답글 -->
+  <section id="panel-comments" class="card" style="display:none">
+    <div class="toolbar">
+      <div class="row-compact">
+        <strong>댓글/답글 관리</strong>
+        <span class="muted">게시글 ID를 입력해 댓글/답글을 조회·삭제</span>
+      </div>
+      <div class="grid3" style="align-items:center">
+        <input id="cm-postid" class="field" placeholder="communityPosts/{postId}">
+        <button id="cm-load" class="btn">불러오기</button>
+        <button id="cm-del-all" class="btn danger">이 글의 댓글/답글 전체 삭제</button>
+      </div>
+    </div>
+    <div id="cm-list" class="list"><div class="empty">게시글 ID를 입력한 뒤 불러오기를 누르세요.</div></div>
+  </section>
+
+  <!-- 사용자 -->
+  <section id="panel-users" class="card" style="display:none">
+    <div class="toolbar">
+      <div><strong>사용자 검색/밴</strong></div>
+      <div class="muted">별명 또는 UID로 조회 → 밴(정지)/해제</div>
+    </div>
+    <div class="grid2" style="margin-bottom:8px">
+      <div class="row-compact">
+        <input id="u-nick" class="field" placeholder="별명으로 검색">
+        <button id="u-find-nick" class="btn">검색</button>
+      </div>
+      <div class="row-compact">
+        <input id="u-uid" class="field" placeholder="UID로 검색">
+        <button id="u-find-uid" class="btn">검색</button>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:10px">
+      <input id="ban-reason" class="field" placeholder="정지 사유(선택)">
+      <div class="row-compact">
+        <input id="ban-days" class="field" type="number" min="0" placeholder="정지 일수(0=영구)">
+        <button id="u-ban" class="btn danger">정지</button>
+        <button id="u-unban" class="btn">정지 해제</button>
+      </div>
+    </div>
+    <div id="u-info" class="list"><div class="empty">검색 결과가 여기에 표시됩니다.</div></div>
+    <div class="warn" style="margin-top:10px">
+      ⚠️ <b>규칙 보강 필요:</b> 밴 적용을 강제하려면 Firestore 보안규칙에
+      <code>bans/{uid}.banned==true</code> 및 <code>until</code> 검사로 <b>create</b> 차단을 추가하세요.
+      (아래 코드 맨 끝 주석의 예시 참고)
+    </div>
+  </section>
+
+  <!-- 관리자 -->
+  <section id="panel-admin" class="card" style="display:none">
+    <div class="toolbar">
+      <div><strong>관리자 설정</strong></div>
+      <span class="muted">별명 또는 UID로 추가 · 목록에서 삭제</span>
+    </div>
+
+    <div class="grid2" style="margin-bottom:10px">
+      <div class="row-compact">
+        <input id="adm-nick" class="field" placeholder="별명 입력(예: 개발자)">
+        <button id="adm-add-nick" class="btn primary">별명으로 추가</button>
+      </div>
+      <div class="row-compact">
+        <input id="adm-uid" class="field" placeholder="UID 직접 입력">
+        <button id="adm-add-uid" class="btn">UID로 추가</button>
+      </div>
+    </div>
+    <div class="muted" style="margin:-6px 0 12px">※ 별명 추가는 <code>nicknames/{별명소문자}</code>에서 UID를 찾아 등록합니다.</div>
+
+    <div id="admin-list" class="list"><div class="empty">관리자 목록 불러오는 중…</div></div>
+  </section>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import {
+  getFirestore, collection, query, orderBy, limit, startAfter, getDocs, doc, deleteDoc, getDoc, setDoc,
+  getCountFromServer, serverTimestamp, writeBatch
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+/* ================= Firebase ================= */
+const cfg = {
+  apiKey: "AIzaSyACn_-2BLztKYmBKXtrKNtMsC-2Y238oug",
+  authDomain: "woori-1ecf5.firebaseapp.com",
+  projectId: "woori-1ecf5",
+  storageBucket: "woori-1ecf5.appspot.com",   // ← 수정: .firebasestorage.app ❌
+  messagingSenderId: "1073097361525",
+  appId: "1:1073097361525:web:3218ced6a040aaaf4d503c",
+  databaseURL: "https://woori-1ecf5-default-rtdb.firebaseio.com" // ✅ 정확히 콘솔 URL과 동일
+};
+
+const app = initializeApp(cfg);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+/* ================= DOM/State ================= */
+const $ = (id)=>document.getElementById(id);
+const tabPosts=$('tab-posts'), tabChat=$('tab-chat'), tabAdmin=$('tab-admin'), tabUsers=$('tab-users'), tabComments=$('tab-comments');
+const pPosts=$('panel-posts'), pChat=$('panel-chat'), pAdmin=$('panel-admin'), pUsers=$('panel-users'), pComments=$('panel-comments');
+const logoutBtn=$('logout');
+let busy = false;
+
+logoutBtn.onclick = async ()=>{ try{ await signOut(auth); }catch(e){ alertErr(e); } };
+
+// 탭
+const tabs=[[tabPosts,pPosts],[tabChat,pChat],[tabComments,pComments],[tabUsers,pUsers],[tabAdmin,pAdmin]];
+tabs.forEach(([t,p])=>{
+  t.onclick=()=>{ tabs.forEach(([tt,pp])=>{ tt.classList.remove('active'); pp.style.display='none'; }); t.classList.add('active'); p.style.display='block'; };
+});
+
+function setBusy(b){ busy=b; document.querySelectorAll('button').forEach(btn=>btn.disabled=b); }
+function esc(s){ return String(s||'').replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m])); }
+function fmt(ts){
+  try{
+    if(ts?.toDate) return ts.toDate().toLocaleString();
+    if(typeof ts==='string' || ts instanceof String) return new Date(ts).toLocaleString();
+    return '';
+  }catch{ return ''; }
+}
+function alertErr(e){ console.error(e); alert('오류: '+(e?.code||e?.message||'알 수 없음')); }
+
+/* ===== 관리자 체크 후 로드 ===== */
+onAuthStateChanged(auth, async (u)=>{
+  if(!u){ location.replace('/login.html'); return; }
+  try{
+    const a = await getDoc(doc(db,'admins', u.uid));
+    if(!a.exists()){ alert('관리자만 접근할 수 있습니다.'); location.replace('/index.html'); return; }
+    await Promise.all([loadPostPage(1), loadChatPage(1), loadAdmins()]);
+  }catch(e){
+    alertErr(e); location.replace('/index.html');
+  }
+});
+
+/* -----------------------
+ * 게시글 관리 (10개 페이지네이션) + 일괄 삭제
+ * --------------------- */
+const POST_PAGE_SIZE=10;
+let postPage=1, postTotalPages=1;
+let postCursors=[null];
+const postList=$('post-list'), postCnt=$('post-count'), postPageLbl=$('post-page');
+$('post-prev').onclick=()=>{ if(postPage>1) loadPostPage(postPage-1); };
+$('post-next').onclick=()=>{ if(postPage<postTotalPages) loadPostPage(postPage+1); };
+$('post-del-page').onclick=async()=>{
+  if(!confirm('현재 페이지의 게시글을 모두 삭제할까요? (댓글/답글/좋아요 포함)')) return;
+  const ids=[...postList.querySelectorAll('[data-id]')].map(el=>el.getAttribute('data-id'));
+  await bulkDeletePosts(ids);
+  await loadPostPage(postPage);
+};
+$('post-del-all').onclick=async()=>{
+  if(!confirm('정말 전체 게시글을 삭제할까요? 되돌릴 수 없습니다.')) return;
+  await deleteCollectionDeep('communityPosts', 50, async (postId)=>{ await deletePostDeep(postId); });
+  await loadPostPage(1);
+};
+
+async function loadPostPage(page){
+  if(busy) return; setBusy(true);
+  postList.innerHTML='<div class="empty">불러오는 중…</div>';
+  try{
+    const agg = await getCountFromServer(collection(db,'communityPosts'));
+    const total = agg.data().count||0; postCnt.textContent = total;
+    postTotalPages = Math.max(1, Math.ceil(total/POST_PAGE_SIZE));
+
+    let q = query(collection(db,'communityPosts'), orderBy('createdAt','desc'), limit(POST_PAGE_SIZE));
+    const c = postCursors[page-1]; if(c) q = query(q, startAfter(c));
+    const snap = await getDocs(q);
+    const docs = snap.docs;
+    if(docs.length) postCursors[page] = docs[docs.length-1];
+
+    postList.innerHTML='';
+    if(docs.length===0){
+      postList.innerHTML='<div class="empty">표시할 게시글이 없습니다.</div>';
+    }else{
+      docs.forEach(d=>{
+        const x=d.data();
+        const el=document.createElement('div'); el.className='row'; el.setAttribute('data-id', d.id);
+        el.innerHTML=`
+          <div>
+            <div class="meta">${fmt(x.createdAt)} · <span class="badge">${esc(x.authorName||'익명')}</span></div>
+            <div class="title">${esc(x.title||'(제목 없음)')}</div>
+            <div class="content">${esc(x.body||'')}</div>
+          </div>
+          <div class="row-compact">
+            <button class="btn" data-open-comments="${d.id}">댓글 보기</button>
+            <button class="btn danger" data-del="${d.id}">삭제</button>
+          </div>`;
+        el.querySelector(`[data-open-comments="${d.id}"]`).onclick=()=>{
+          tabs.find(([t])=>t.id==='tab-comments')[0].click();
+          $('cm-postid').value=d.id; $('cm-load').click();
+        };
+        el.querySelector(`[data-del="${d.id}"]`).onclick=async()=>{
+          if(!confirm('이 게시글과 하위 댓글/답글/좋아요를 모두 삭제할까요?')) return;
+          await deletePostDeep(d.id); el.remove();
+        };
+        postList.appendChild(el);
+      });
+    }
+    postPage=page; postPageLbl.textContent=`${postPage} / ${postTotalPages}`;
+  }catch(e){ alertErr(e); }
+  finally{ setBusy(false); }
+}
+
+async function bulkDeletePosts(ids=[]){
+  for(const id of ids){
+    try{ await deletePostDeep(id); }catch(e){ console.error('post delete failed', id, e); }
+  }
+}
+
+async function deletePostDeep(postId){
+  // 하위: comments, comments/*/replies, likes
+  // 1) 댓글
+  await deleteSubcollectionDeep(['communityPosts', postId, 'comments'], 100, async (cmtId)=>{
+    // 대댓글
+    await deleteSubcollectionDeep(['communityPosts', postId, 'comments', cmtId, 'replies'], 200);
+  });
+  // 2) 좋아요
+  await deleteSubcollectionDeep(['communityPosts', postId, 'likes'], 200);
+  // 3) 본문
+  await deleteDoc(doc(db,'communityPosts',postId));
+}
+
+/* -----------------------
+ * 채팅 관리 (30개 페이지네이션) + 전체 삭제
+ * --------------------- */
+const CHAT_PAGE_SIZE=30;
+let chatPage=1; let chatCursors=[null];
+const chatList=$('chat-list'), chatPageLbl=$('chat-page');
+$('chat-prev').onclick=()=>{ if(chatPage>1) loadChatPage(chatPage-1); };
+$('chat-next').onclick=()=>{ loadChatPage(chatPage+1); };
+$('chat-del-all').onclick=async()=>{
+  if(!confirm('정말 전체 채팅 메시지를 삭제할까요?')) return;
+  await deleteCollectionDeep('rooms/global/messages', 100);
+  await loadChatPage(1);
+};
+
+async function loadChatPage(page){
+  if(busy) return; setBusy(true);
+  chatList.innerHTML='<div class="empty">불러오는 중…</div>';
+  try{
+    let q = query(collection(db,'rooms','global','messages'), orderBy('createdAt','desc'), limit(CHAT_PAGE_SIZE));
+    const c = chatCursors[page-1]; if(c) q = query(q, startAfter(c));
+    const snap = await getDocs(q);
+    const docs = snap.docs;
+    if(docs.length) chatCursors[page] = docs[docs.length-1];
+
+    chatList.innerHTML='';
+    if(docs.length===0){
+      chatList.innerHTML='<div class="empty">더 이상 메시지가 없습니다.</div>';
+    }else{
+      docs.forEach(d=>{
+        const x=d.data();
+        const el=document.createElement('div'); el.className='row';
+        el.innerHTML=`
+          <div>
+            <div class="meta">${fmt(x.createdAt)} · <span class="badge">${esc(x.senderName||'익명')}</span> · <span class="muted">${esc(d.id)}</span></div>
+            <div class="content">${esc(x.text||'')}</div>
+          </div>
+          <div><button class="btn danger" data-del="${d.id}">삭제</button></div>`;
+        el.querySelector(`[data-del="${d.id}"]`).onclick=async()=>{
+          if(!confirm('이 메시지를 삭제할까요?')) return;
+          try{ await deleteDoc(doc(db,'rooms','global','messages',d.id)); el.remove(); }catch(e){ alertErr(e); }
+        };
+        chatList.appendChild(el);
+      });
+    }
+    chatPage=page; chatPageLbl.textContent=String(chatPage);
+  }catch(e){ alertErr(e); }
+  finally{ setBusy(false); }
+}
+
+/* -----------------------
+ * 댓글/답글 관리
+ * --------------------- */
+const cmPostIdEl=$('cm-postid'), cmLoadBtn=$('cm-load'), cmList=$('cm-list'), cmDelAll=$('cm-del-all');
+
+cmLoadBtn.onclick = async ()=>{
+  const postId = cmPostIdEl.value.trim();
+  if(!postId) return alert('게시글 ID를 입력하세요.');
+  await loadCommentsOfPost(postId);
+};
+
+cmDelAll.onclick = async ()=>{
+  const postId = cmPostIdEl.value.trim();
+  if(!postId) return alert('게시글 ID를 입력하세요.');
+  if(!confirm('이 게시글의 댓글/답글을 전부 삭제할까요?')) return;
+  await deleteSubcollectionDeep(['communityPosts', postId, 'comments'], 100, async (cmtId)=>{
+    await deleteSubcollectionDeep(['communityPosts', postId, 'comments', cmtId, 'replies'], 200);
+  });
+  await loadCommentsOfPost(postId);
+};
+
+async function loadCommentsOfPost(postId){
+  cmList.innerHTML='<div class="empty">불러오는 중…</div>';
+  try{
+    const snap = await getDocs(query(collection(db,'communityPosts',postId,'comments'), orderBy('createdAt','asc'), limit(500)));
+    cmList.innerHTML='';
+    if(snap.empty){ cmList.innerHTML='<div class="empty">댓글이 없습니다.</div>'; return; }
+    for(const cDoc of snap.docs){
+      const c=cDoc.data();
+      const row=document.createElement('div'); row.className='row';
+      row.innerHTML=`
+        <div>
+          <div class="meta">댓글 · ${fmt(c.createdAt)} · ${esc(c.authorName||'익명')} · <span class="muted">${esc(cDoc.id)}</span></div>
+          <div class="content">${esc(c.text||'')}</div>
+          <div id="rep-${cDoc.id}" class="list" style="margin-top:8px"><div class="muted">대댓글 불러오는 중…</div></div>
+        </div>
+        <div class="row-compact">
+          <button class="btn danger" data-cdel="${cDoc.id}">댓글 삭제</button>
+        </div>`;
+      cmList.appendChild(row);
+
+      // 댓글 삭제
+      row.querySelector(`[data-cdel="${cDoc.id}"]`).onclick=async()=>{
+        if(!confirm('이 댓글과 하위 답글을 삭제할까요?')) return;
+        await deleteSubcollectionDeep(['communityPosts', postId, 'comments', cDoc.id, 'replies'], 200);
+        await deleteDoc(doc(db,'communityPosts',postId,'comments',cDoc.id));
+        row.remove();
+      };
+
+      // 대댓글 로드
+      const repList=row.querySelector(`#rep-${cDoc.id}`);
+      const repSnap=await getDocs(query(collection(db,'communityPosts',postId,'comments',cDoc.id,'replies'), orderBy('createdAt','asc'), limit(500)));
+      repList.innerHTML='';
+      if(repSnap.empty){ repList.innerHTML='<div class="muted">대댓글 없음</div>'; }
+      else{
+        repSnap.forEach(r=>{
+          const rv=r.data();
+          const rrow=document.createElement('div'); rrow.className='row';
+          rrow.innerHTML=`
+            <div>
+              <div class="meta">↳ 답글 · ${fmt(rv.createdAt)} · ${esc(rv.authorName||'익명')} · <span class="muted">${esc(r.id)}</span></div>
+              <div class="content">${esc(rv.text||'')}</div>
+            </div>
+            <div><button class="btn danger" data-rdel="${r.id}">답글 삭제</button></div>`;
+          rrow.querySelector(`[data-rdel="${r.id}"]`).onclick=async()=>{
+            if(!confirm('이 답글을 삭제할까요?')) return;
+            await deleteDoc(doc(db,'communityPosts',postId,'comments',cDoc.id,'replies',r.id));
+            rrow.remove();
+          };
+          repList.appendChild(rrow);
+        });
+      }
+    }
+  }catch(e){ alertErr(e); }
+}
+
+/* -----------------------
+ * 사용자 검색/밴
+ * --------------------- */
+const uInfo=$('u-info'), uNick=$('u-nick'), uFindNick=$('u-find-nick'), uUid=$('u-uid'), uFindUid=$('u-find-uid');
+const banReason=$('ban-reason'), banDays=$('ban-days'), uBan=$('u-ban'), uUnban=$('u-unban');
+let currentUserId=null;
+
+uFindNick.onclick = async ()=>{
+  const nick=uNick.value.trim().toLowerCase(); if(!nick) return alert('별명을 입력하세요.');
+  await findUserByNick(nick);
+};
+uFindUid.onclick = async ()=>{
+  const uid=uUid.value.trim(); if(!uid) return alert('UID를 입력하세요.');
+  await showUser(uid);
+};
+uBan.onclick = async ()=>{
+  if(!currentUserId) return alert('대상 사용자를 먼저 검색하세요.');
+  const days = parseInt(banDays.value||'0',10);
+  const until = days>0 ? new Date(Date.now()+days*24*60*60*1000) : null;
+  await setDoc(doc(db,'bans', currentUserId), {
+    banned:true, reason:banReason.value||'', until: until? until.toISOString():null, by:auth.currentUser?.uid||'(unknown)', at:serverTimestamp()
+  }, { merge:true });
+  await showUser(currentUserId);
+  alert('정지 처리 완료');
+};
+uUnban.onclick = async ()=>{
+  if(!currentUserId) return alert('대상 사용자를 먼저 검색하세요.');
+  await setDoc(doc(db,'bans', currentUserId), { banned:false, reason:'', until:null, by:auth.currentUser?.uid||'(unknown)', at:serverTimestamp() }, { merge:true });
+  await showUser(currentUserId);
+  alert('정지 해제 완료');
+};
+
+async function findUserByNick(nickLower){
+  try{
+    const map = await getDoc(doc(db,'nicknames', nickLower));
+    if(!map.exists()) { uInfo.innerHTML='<div class="empty">해당 별명 없음</div>'; currentUserId=null; return; }
+    await showUser(map.data().uid);
+  }catch(e){ alertErr(e); }
+}
+async function showUser(uid){
+  try{
+    const u = await getDoc(doc(db,'users', uid));
+    const b = await getDoc(doc(db,'bans', uid));
+    const nick = u.exists()? (u.data()?.nickname || '(닉네임 없음)') : '(미등록 사용자)';
+    const banned = b.exists() && b.data()?.banned;
+    const until  = b.exists()? (b.data()?.until || null) : null;
+    currentUserId = uid;
+    uInfo.innerHTML = `
+      <div class="${banned?'warn':'ok'}">
+        <div><b>UID:</b> ${esc(uid)}</div>
+        <div><b>닉네임:</b> ${esc(nick)}</div>
+        <div><b>상태:</b> ${banned? '정지됨' : '정상' } ${until? `· ${esc(new Date(until).toLocaleString())} 까지` : ''}</div>
+      </div>`;
+  }catch(e){ alertErr(e); }
+}
+
+/* -----------------------
+ * 관리자 설정 (추가/삭제)
+ * --------------------- */
+const admList = $('admin-list');
+$('adm-add-nick').onclick = async ()=>{
+  const nick = $('adm-nick').value.trim();
+  if(!nick) return alert('별명을 입력하세요.');
+  setBusy(true);
+  try{
+    const key = nick.toLowerCase();
+    const nSnap = await getDoc(doc(db,'nicknames', key));
+    if(!nSnap.exists()) { alert('해당 별명이 없습니다.'); return; }
+    const uid = nSnap.data().uid;
+    await addAdmin(uid, `nick:${key}`);
+  }catch(e){ alertErr(e); }
+  finally{ setBusy(false); }
+};
+$('adm-add-uid').onclick = async ()=>{
+  const uid = $('adm-uid').value.trim();
+  if(!uid) return alert('UID를 입력하세요.');
+  setBusy(true);
+  try{ await addAdmin(uid, 'uid'); }
+  catch(e){ alertErr(e); }
+  finally{ setBusy(false); }
+};
+
+async function addAdmin(uid, via){
+  const me = auth.currentUser?.uid || '(unknown)';
+  await setDoc(doc(db,'admins', uid), { at: serverTimestamp(), by: me, via }, { merge:true });
+  await loadAdmins();
+  $('adm-nick').value=''; $('adm-uid').value='';
+}
+
+async function loadAdmins(){
+  admList.innerHTML='<div class="empty">불러오는 중…</div>';
+  try{
+    const snap = await getDocs(query(collection(db,'admins')));
+    const items = await Promise.all(snap.docs.map(async d=>{
+      const uid = d.id;
+      let nick='(닉네임 없음)';
+      try{
+        const u = await getDoc(doc(db,'users', uid));
+        if(u.exists()) nick = u.data()?.nickname || nick;
+      }catch{}
+      return { id: uid, nick, meta: d.data() };
+    }));
+    admList.innerHTML='';
+    if(items.length===0){ admList.innerHTML='<div class="empty">등록된 관리자가 없습니다.</div>'; return; }
+    items.forEach(a=>{
+      const el=document.createElement('div'); el.className='row';
+      el.innerHTML=`
+        <div>
+          <div class="meta">UID: ${esc(a.id)} · 추가: ${fmt(a.meta?.at)}${a.meta?.by?` · by ${esc(a.meta.by)}`:''}</div>
+          <div class="title">${esc(a.nick)}</div>
+        </div>
+        <div><button class="btn danger" data-del="${a.id}">삭제</button></div>`;
+      el.querySelector(`[data-del="${a.id}"]`).onclick=async()=>{
+        if(!confirm('이 사용자를 관리자에서 제거할까요?')) return;
+        try{ await deleteDoc(doc(db,'admins', a.id)); el.remove(); }catch(e){ alertErr(e); }
+      };
+      admList.appendChild(el);
+    });
+  }catch(e){ alertErr(e); }
+}
+
+/* -----------------------
+ * 공통: 컬렉션(하위 포함) 삭제 유틸
+ * --------------------- */
+// 경로: 'rooms/global/messages' 또는 ['communityPosts', postId, 'comments'] 처럼 배열 가능
+function toPathArray(pathOrArr){ return Array.isArray(pathOrArr)? pathOrArr: pathOrArr.split('/'); }
+
+async function deleteCollectionDeep(pathOrArr, pageSize=100, perDocCallback=null){
+  const p = toPathArray(pathOrArr);
+  // 단순 컬렉션(문서 없음) → 페이징 삭제
+  let cursor=null, fetched=0;
+  // createdAt 정렬이 없는 컬렉션도 있어 정렬 없이 페이지닝: Firestore 제한상 orderBy 필수. createdAt 기준 시도, 없으면 id 정렬로 폴백.
+  while(true){
+    let qref = query(collection(db, ...p), orderBy('createdAt','asc'), limit(pageSize));
+    if(cursor) qref = query(qref, startAfter(cursor));
+    const snap = await getDocs(qref).catch(async ()=>{
+      // createdAt 없으면 id 정렬 폴백
+      let qref2 = query(collection(db, ...p), orderBy('__name__','asc'), limit(pageSize));
+      if(cursor) qref2 = query(qref2, startAfter(cursor));
+      return await getDocs(qref2);
+    });
+    if(snap.empty) break;
+    const batch = writeBatch(db);
+    for(const d of snap.docs){
+      if(typeof perDocCallback === 'function'){
+        await perDocCallback(d.id); // 상위에서 하위 삭제 수행
+      }
+      batch.delete(d.ref);
+      fetched++;
+    }
+    await batch.commit();
+    cursor = snap.docs[snap.docs.length-1];
+  }
+  return fetched;
+}
+
+async function deleteSubcollectionDeep(pathArr, pageSize=200, perDocCb=null){
+  return await deleteCollectionDeep(pathArr, pageSize, perDocCb);
+}
+</script>
+
+<!--
+==================== 중요: 보안 규칙 보강(권장) ====================
+정지(밴) 강제 적용을 위해 Firestore 규칙을 다음처럼 보강하세요.
+
+match /databases/{database}/documents {
+  // 밴 컬렉션 조회는 관리자만 (또는 본인만)
+  match /bans/{uid} {
+    allow read: if request.auth != null && (
+      request.auth.uid == uid ||
+      exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+    );
+    allow write: if request.auth != null &&
+      exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+  }
+
+  // 커뮤니티 글/댓글/답글 쓰기 시 밴 여부 차단
+  function isBanned() {
+    return exists(/databases/$(database)/documents/bans/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/bans/$(request.auth.uid)).data.banned == true &&
+           (
+             get(/databases/$(database)/documents/bans/$(request.auth.uid)).data.until == null ||
+             request.time < timestamp(get(/databases/$(database)/documents/bans/$(request.auth.uid)).data.until)
+           );
+  }
+
+  match /communityPosts/{postId} {
+    allow create: if request.auth != null
+                  && !isBanned()
+                  && request.resource.data.authorUid == request.auth.uid;
+    // update/delete 규칙은 기존과 동일 + 관리자 허용
+    match /comments/{commentId} {
+      allow create: if request.auth != null && !isBanned()
+                    && request.resource.data.authorUid == request.auth.uid;
+      match /replies/{replyId} {
+        allow create: if request.auth != null && !isBanned()
+                      && request.resource.data.authorUid == request.auth.uid;
+      }
+    }
+  }
+
+  match /rooms/{roomId}/messages/{msgId} {
+    allow create: if request.auth != null && !isBanned()
+                  && request.resource.data.senderUid == request.auth.uid;
+  }
+}
+====================================================================
+-->
+</body>
+</html>

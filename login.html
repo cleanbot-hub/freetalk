@@ -1,0 +1,220 @@
+<!doctype html> 
+<html lang="ko">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>로그인 • Freetalk</title>
+<style>
+:root{--bg:#f6f7fb;--ink:#0f1724;--muted:#6b7280;--accent:#6d28d9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif;color:var(--ink)}
+.wrap{max-width:520px;margin:40px auto;padding:16px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,.06);padding:18px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{flex:1;padding:10px 12px;border-radius:10px;text-align:center;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+.tab.active{background:var(--accent);color:#fff;border-color:transparent}
+.row{display:flex;gap:8px;align-items:center}
+.field{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;margin-top:10px}
+.btn{padding:12px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;margin-top:12px;cursor:pointer}
+.btn.small{padding:10px 12px;margin-top:0}
+.btn[disabled]{opacity:.6;cursor:not-allowed}
+.muted{color:var(--muted);font-size:13px;margin-top:8px}
+.topnav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.link{padding:8px 12px;border:1px solid #e5e7eb;border-radius:10px;text-decoration:none;color:#111;background:#fff}
+.notice{margin-top:12px;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;padding:10px;font-size:13px}
+/* Mobile */
+@media (max-width: 768px){
+  .wrap{ padding:12px; }
+  .card{ padding:12px; }
+  .field{ width:100%; font-size:16px; }
+  .btn{ padding:10px 12px; font-size:14px; }
+}
+body{ padding-bottom:env(safe-area-inset-bottom); -webkit-text-size-adjust:100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topnav">
+    <strong>Freetalk</strong>
+    <div style="display:flex;gap:8px">
+      <a class="link" href="index.html">메인</a>
+      <a class="link" href="community.html">커뮤니티</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tabs" role="tablist">
+      <button id="tab-login"  class="tab active" role="tab" aria-selected="true">로그인</button>
+      <button id="tab-signup" class="tab" role="tab" aria-selected="false">회원가입</button>
+    </div>
+
+    <!-- 로그인 -->
+    <div id="panel-login">
+      <input id="login-nick" class="field" placeholder="별명(닉네임)" autocomplete="username"/>
+      <input id="login-pw"   class="field" type="password" placeholder="비밀번호(6자 이상)" autocomplete="current-password"/>
+      <button id="do-login"  class="btn">로그인</button>
+      <div class="muted">이 서비스는 이메일 없이 <b>별명+비밀번호</b>로 로그인합니다.</div>
+    </div>
+
+    <!-- 회원가입 -->
+    <div id="panel-signup" style="display:none">
+      <div class="row" style="gap:8px">
+        <input id="sign-nick" class="field" placeholder="별명(닉네임)" autocomplete="username"/>
+        <button id="btn-check" class="btn small" type="button">중복 확인</button>
+      </div>
+      <input id="sign-pw"  class="field" type="password" placeholder="비밀번호(6자 이상)" autocomplete="new-password"/>
+      <input id="sign-pw2" class="field" type="password" placeholder="비밀번호 확인" autocomplete="new-password"/>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px">
+        <input id="agree" type="checkbox" />
+        <span>(필수) 개인정보 수집·이용에 동의합니다.<br/><span class="muted">서비스 제공 및 계정 관리 목적으로 닉네임을 수집·이용합니다.</span></span>
+      </label>
+      <button id="do-signup" class="btn">회원가입</button>
+      <div class="muted">가입 후 즉시 커뮤니티/채팅을 사용할 수 있어요.</div>
+      <div class="notice">🔴 <b>주의:</b> 비밀번호 찾기/복구 기능이 없습니다. 꼭 기억해 주세요.</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, deleteUser } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const cfg = {
+  apiKey: "AIzaSyACn_-2BLztKYmBKXtrKNtMsC-2Y238oug",
+  authDomain: "woori-1ecf5.firebaseapp.com",
+  projectId: "woori-1ecf5",
+  storageBucket: "woori-1ecf5.appspot.com",   // ← 수정: .firebasestorage.app ❌
+  messagingSenderId: "1073097361525",
+  appId: "1:1073097361525:web:3218ced6a040aaaf4d503c",
+  databaseURL: "https://woori-1ecf5-default-rtdb.firebaseio.com" // ✅ 정확히 콘솔 URL과 동일
+};
+
+const app=initializeApp(cfg); const auth=getAuth(app); const db=getFirestore(app);
+
+const $=id=>document.getElementById(id);
+const tabLogin=$('tab-login'), tabSign=$('tab-signup');
+const loginNick=$('login-nick'), loginPw=$('login-pw'), doLogin=$('do-login');
+const signNick=$('sign-nick'),  signPw=$('sign-pw'),  signPw2=$('sign-pw2'), btnCheck=$('btn-check'), agree=$('agree'), doSignup=$('do-signup');
+const panelLogin=$('panel-login'), panelSign=$('panel-signup');
+
+let nickOk=false, redirected=false, busy=false;
+
+const err = e=>alert( {
+  "auth/email-already-in-use":"이미 사용 중인 별명입니다.",
+  "auth/weak-password":"비밀번호가 6자 미만입니다.",
+  "auth/invalid-credential":"별명 또는 비밀번호가 올바르지 않습니다.",
+  "permission-denied":"권한이 없습니다."
+}[e.code] || ('오류: '+(e.message||e.code)));
+
+const normNick = n=>n.trim().toLowerCase();
+const validNick = n=>/^[^\s]{2,20}$/.test(n.trim()); // 공백 없는 2~20자
+const makeEmailFromNick = n=>`${normNick(n)}@nick.local`;
+
+/** 최초 로그인/가입 직후 users.nickname & displayName 보장 */
+async function ensureNickname(user, fallbackNick){
+  const uRef = doc(db,'users',user.uid);
+  const s = await getDoc(uRef);
+  let nick = s.data()?.nickname?.trim();
+  if(!nick){
+    nick = user.displayName?.trim() || fallbackNick;
+    if(!validNick(nick)) nick = fallbackNick; // 방어
+    await setDoc(uRef,{ nickname:nick, createdAt: s.exists()? s.data().createdAt : serverTimestamp() },{ merge:true });
+    try{ await updateProfile(user,{ displayName:nick }); }catch{}
+  }
+  return nick;
+}
+
+/** (로그인 후 백필) nicknames/{nickLower} 없으면 선점 시도 */
+async function claimNicknameIfMissing(uid, nick){
+  const key = normNick(nick);
+  try{
+    const ref = doc(db,'nicknames', key);
+    const snap = await getDoc(ref);
+    if(!snap.exists()){
+      // 규칙: create only if id==nickLower && uid==auth.uid && !exists
+      await setDoc(ref, { uid }, { merge:false });
+    }
+  }catch(e){
+    // 이미 존재/권한없음 등은 조용히 무시(로그인엔 영향 없음)
+  }
+}
+
+/** UI helpers */
+function setBusy(state){
+  busy = state;
+  [doLogin, btnCheck, doSignup].forEach(b=>{ if(b) b.disabled=state; });
+}
+
+tabLogin.onclick=()=>{ tabLogin.classList.add('active'); tabSign.classList.remove('active'); panelLogin.style.display='block'; panelSign.style.display='none'; };
+tabSign.onclick =()=>{ tabSign.classList.add('active'); tabLogin.classList.remove('active'); panelLogin.style.display='none'; panelSign.style.display='block'; };
+
+/** 로그인 상태면 바로 이동 */
+onAuthStateChanged(auth,(u)=>{ if(u && !redirected){ redirected=true; location.replace('chat.html'); } });
+
+/** 닉 입력 바뀌면 중복확인 초기화 */
+signNick.addEventListener('input', ()=>{ nickOk=false; });
+
+btnCheck.onclick = async ()=>{
+  const n = signNick.value.trim();
+  if(!validNick(n)) return alert('별명은 공백 없이 2~20자로 입력하세요.');
+  setBusy(true);
+  try{
+    const s = await getDoc(doc(db,'nicknames',normNick(n)));
+    nickOk = !s.exists();
+    alert(nickOk?'사용 가능합니다.':'이미 사용 중입니다.');
+  }catch(e){ err(e); }
+  finally{ setBusy(false); }
+};
+
+async function doLoginFlow(){
+  const n=loginNick.value.trim(), p=loginPw.value.trim();
+  if(!validNick(n)) return alert('별명은 공백 없이 2~20자로 입력하세요.');
+  if(p.length<6)    return alert('비밀번호는 6자 이상이어야 합니다.');
+  setBusy(true);
+  try{
+    const { user } = await signInWithEmailAndPassword(auth, makeEmailFromNick(n), p);
+    const fixedNick = await ensureNickname(user, n);
+    await claimNicknameIfMissing(user.uid, fixedNick);
+    redirected=true; location.replace('chat.html');
+  }catch(e){ err(e); }
+  finally{ setBusy(false); }
+}
+
+async function doSignupFlow(){
+  const n=signNick.value.trim(), p1=signPw.value.trim(), p2=signPw2.value.trim();
+  if(!validNick(n)) return alert('별명은 공백 없이 2~20자로 입력하세요.');
+  if(p1.length<6)  return alert('비밀번호는 6자 이상이어야 합니다.');
+  if(p1!==p2)      return alert('비밀번호 확인이 일치하지 않습니다.');
+  if(!agree.checked) return alert('개인정보 동의가 필요합니다.');
+  if(!nickOk) return alert('별명 중복 확인을 먼저 해주세요.');
+
+  setBusy(true);
+  try{
+    const email = makeEmailFromNick(n);
+    const { user } = await createUserWithEmailAndPassword(auth,email,p1);
+
+    // 닉네임 선점 (규칙상 create만 허용 → 이미 있으면 예외 발생)
+    try{
+      await setDoc(doc(db,'nicknames',normNick(n)),{ uid:user.uid, at:serverTimestamp() });
+    }catch(e){
+      try{ await deleteUser(user); }catch{}
+      throw { code:'auth/email-already-in-use', message:'이미 사용 중인 별명입니다.' };
+    }
+
+    try{ await updateProfile(user,{ displayName:n }); }catch{}
+    await setDoc(doc(db,'users',user.uid),{ nickname:n, createdAt:serverTimestamp() },{ merge:true });
+
+    redirected=true; alert('가입 완료! 채팅으로 이동합니다.'); location.replace('chat.html');
+  }catch(e){ err(e); }
+  finally{ setBusy(false); }
+}
+
+/** 버튼/Enter 핸들링 */
+doLogin.onclick = doLoginFlow;
+doSignup.onclick = doSignupFlow;
+loginPw.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin.click(); });
+loginNick.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin.click(); });
+signPw2.addEventListener('keydown', e=>{ if(e.key==='Enter') doSignup.click(); });
+
+</script>
+</body>
+</html>
