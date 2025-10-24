@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" href="data:,">
+  <title>업무 등록</title>
+
+  <style>
+    :root{
+      --bg:#0b1020;--panel:#121831;--ink:#e5e7eb;--muted:#9aa3b2;--accent:#7c3aed;--accent-2:#8b5cf6;--danger:#ef4444;
+      --bd:#1f2745;--radius:14px;--max:980px
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b1020,#0f1530);color:var(--ink);font:15px/1.6 system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial}
+    a{color:inherit}
+    .wrap{max-width:var(--max);margin:24px auto;padding:0 16px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .badge{padding:2px 8px;border:1px solid var(--bd);border-radius:999px;color:var(--muted);font-size:12px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .panel{background:linear-gradient(180deg,#121831,#0f142d);border:1px solid var(--bd);border-radius:var(--radius);padding:14px;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+    .panel h2{margin:0 0 6px;font-size:16px}
+    .hint{color:var(--muted);font-size:12px}
+    .row{display:flex;gap:10px;align-items:center}
+    .field{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:#0e1530;color:var(--ink);outline:none}
+    .field::placeholder{color:#6b7280}
+    .select{appearance:none}
+    .btn{padding:10px 14px;border-radius:10px;background:#1a2142;border:1px solid var(--bd);color:var(--ink);cursor:pointer}
+    .btn:hover{filter:brightness(1.05)}
+    .btn.primary{background:linear-gradient(180deg,var(--accent-2),var(--accent));border-color:#6d28d9}
+    .btn.ghost{background:transparent;border-color:var(--bd)}
+    .btn.small{padding:6px 10px;font-size:13px}
+    .btn.danger{background:#24121a;border-color:#3a1a25;color:#fecaca}
+    .stack{display:flex;flex-direction:column;gap:10px}
+    .k{font-size:12px;color:var(--muted)}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .task{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border:1px dashed var(--bd);border-radius:12px;padding:12px}
+    .task b{font-weight:600}
+    .chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--bd);background:#0b1230;color:#cbd5e1}
+    .chip.stat-open{border-color:#334155}
+    .chip.stat-prog{border-color:#1d4ed8;color:#bfdbfe}
+    .chip.stat-done{border-color:#16a34a;color:#bbf7d0}
+    .chip.warn{border-color:#7c2d12;color:#ffedd5}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);background:#0b1230;border-radius:999px;padding:4px 10px;font-size:12px;color:#cbd5e1}
+
+    /* 수술 미니 리스트 */
+    .s-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .s-item{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;border:1px dashed var(--bd);border-radius:10px;padding:8px;background:#0e1530}
+    .s-item b{font-weight:600}
+
+    /* 모달 공통 */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(8,10,18,.6);backdrop-filter:blur(4px);z-index:20}
+    .modal .panel{width:min(680px,100%)}
+
+    /* Mobile */
+    @media (max-width: 820px){
+      .wrap{ margin:16px auto; padding:8px }
+      .topbar{ flex-wrap:wrap; gap:8px }
+      .topbar .row{ flex-wrap:wrap; gap:6px }
+      .grid-2{ display:grid; grid-template-columns:1fr; gap:12px }
+      .panel{ padding:12px; border-radius:12px }
+      .row{ flex-wrap:wrap }
+      .field{ font-size:16px }
+      .btn{ padding:10px 12px }
+      .task{ flex-direction:column; align-items:stretch }
+      .task > div:last-child{ text-align:left; margin-top:6px }
+      .chips{ gap:4px }
+      .chip{ font-size:11px; padding:2px 7px }
+      .k{ font-size:12px }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- 상단 -->
+    <div class="topbar">
+      <div class="brand">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3l8 4.5v9L12 21 4 16.5v-9L12 3z" stroke="#8b5cf6" stroke-width="1.4"/>
+        </svg>
+        <div>
+          <div style="font-weight:700">업무 등록</div>
+          <div class="hint">이송업무는 담당자 입력 없이 <b>본인 자동 배정</b>됩니다.</div>
+        </div>
+      </div>
+      <div class="row">
+        <span id="me-pill" class="badge">로그인 확인 중…</span>
+        <button id="btn-dashboard" class="btn">대시보드</button>
+        <button id="btn-logout" class="btn ghost">로그아웃</button>
+      </div>
+    </div>
+
+    <!-- 본문 -->
+    <div class="grid-2">
+      <!-- 이송업무 등록 -->
+      <section class="panel">
+        <h2>이송업무 등록</h2>
+        <p class="hint">목적지/부서만 입력하면 됩니다. 담당자는 현재 사용자로 자동 배정됩니다.</p>
+        <div class="stack" style="margin-top:8px">
+          <input id="t-dept" class="field" placeholder="목적지/부서 (예: 9층 영상의학과)">
+          <div class="row">
+            <select id="t-mob" class="field select" title="이동수단">
+              <option value="bed">이동침대</option>
+              <option value="wheelchair">휠체어</option>
+              <option value="walk">도보</option>
+            </select>
+            <select id="t-pri" class="field select" title="우선도">
+              <option value="Routine">보통</option>
+              <option value="STAT">긴급</option>
+            </select>
+          </div>
+          <textarea id="t-note" class="field" rows="3" placeholder="메모 (선택)"></textarea>
+          <div class="row" style="justify-content:flex-end">
+            <button id="open-misc" class="btn">기타 업무</button>
+            <button id="t-save" class="btn primary">등록</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 수술 등록 (PII 없이) -->
+      <section class="panel">
+        <h2>수술 등록</h2>
+        <p class="hint">환자 식별정보 없이 수술 흐름만 기록합니다. 최초 상태는 ‘수술대기’입니다.</p>
+        <div class="stack" style="margin-top:8px">
+          <input id="s-id" class="field" placeholder="케이스 ID (자동 생성)" disabled>
+          <div class="row">
+            <select id="s-dept" class="field select" title="수술 분류">
+              <option value="NS">NS (신경외과)</option>
+              <option value="OS">OS (정형외과)</option>
+            </select>
+            <input id="s-name" class="field" placeholder="수술명 (예: 척추 고정술)" required>
+          </div>
+          <textarea id="s-note" class="field" rows="3" placeholder="메모 (선택, 개인정보 금지)"></textarea>
+          <div class="row" style="justify-content:flex-end">
+            <span class="pill">초기 상태: 수술대기</span>
+            <button id="s-save" class="btn primary">등록</button>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:10px">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="k">오늘 등록된 수술 (최근 5)</div>
+            <div class="row">
+              <span id="s-count" class="pill">0건</span>
+              <button id="s-reload" class="btn small">새로고침</button>
+            </div>
+          </div>
+          <div id="s-list" class="s-list">
+            <div class="k">불러오는 중…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 나의 업무 (오늘) -->
+      <section class="panel" style="grid-column:1 / -1">
+        <h2>나의 업무</h2>
+        <p class="hint">오늘 등록된 본인 업무만 표시됩니다. 항목 오른쪽 버튼으로 <b>상태 전환</b>·<b>삭제</b>가 가능합니다.</p>
+        <div id="my-list" class="list" aria-live="polite"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 기타 업무 등록 모달 -->
+  <div id="misc-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="misc-title">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <strong id="misc-title">기타 업무 등록</strong>
+        <div class="row">
+          <button id="misc-cancel" class="btn">취소</button>
+          <button id="misc-save" class="btn primary">저장</button>
+        </div>
+      </div>
+      <div class="stack" style="margin-top:8px">
+        <input id="m-title" class="field" placeholder="업무 제목 (예: 물품 전달, 서류 접수)">
+        <input id="m-dept"  class="field" placeholder="관련 부서/장소 (선택)">
+        <select id="m-pri" class="field select">
+          <option value="Routine">보통</option>
+          <option value="STAT">긴급</option>
+        </select>
+        <textarea id="m-note" class="field" rows="4" placeholder="상세 메모(선택)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 수술 편집 모달 -->
+  <div id="s-edit-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="s-edit-title">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <strong id="s-edit-title">수술 편집</strong>
+        <div class="row">
+          <button id="s-edit-cancel" class="btn">닫기</button>
+          <button id="s-edit-save" class="btn primary">저장</button>
+        </div>
+      </div>
+      <div class="stack" style="margin-top:8px">
+        <input id="se-id" class="field" disabled>
+        <div class="row">
+          <select id="se-dept" class="field select">
+            <option value="NS">NS (신경외과)</option>
+            <option value="OS">OS (정형외과)</option>
+          </select>
+          <input id="se-name" class="field" placeholder="수술명">
+        </div>
+        <textarea id="se-note" class="field" rows="3" placeholder="메모 (개인정보 금지)"></textarea>
+        <div class="row">
+          <select id="se-status" class="field select" title="상태">
+            <option value="waiting">수술대기</option>
+            <option value="operating">수술진행중</option>
+            <option value="done">완료</option>
+          </select>
+          <span class="k">상태 변경 시 타임스탬프가 자동 기록됩니다.</span>
+        </div>
+        <div id="se-times" class="k" style="margin-top:6px;line-height:1.7"></div>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import {
+  getFirestore, collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot,
+  updateDoc, deleteDoc, doc, Timestamp, getDocs, limit, getDoc
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+const $ = (id)=>document.getElementById(id);
+const esc = s => (s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+
+/* ===== DOM ===== */
+const mePill=$('me-pill'), btnLogout=$('btn-logout'), btnDashboard=$('btn-dashboard');
+
+/* Transport */
+const tDept=$('t-dept'), tMob=$('t-mob'), tPri=$('t-pri'), tNote=$('t-note'), tSave=$('t-save');
+
+/* Misc */
+const miscModal=$('misc-modal'), openMisc=$('open-misc'), miscCancel=$('misc-cancel'), miscSave=$('misc-save');
+const mTitle=$('m-title'), mDept=$('m-dept'), mPri=$('m-pri'), mNote=$('m-note');
+
+/* Surgery form + list */
+const sId=$('s-id'), sDept=$('s-dept'), sName=$('s-name'), sNote=$('s-note'), sSave=$('s-save');
+const sList=$('s-list'), sCount=$('s-count'), sReload=$('s-reload');
+
+/* Surgery edit modal */
+const sEditModal=$('s-edit-modal'), seId=$('se-id'), seDept=$('se-dept'), seName=$('se-name'), seNote=$('se-note'), seStatus=$('se-status');
+const sEditCancel=$('s-edit-cancel'), sEditSave=$('s-edit-save'), seTimes=$('se-times');
+
+/* My tasks */
+const myList=$('my-list');
+
+/* ===== Firebase ===== */
+const firebaseConfig = {
+  apiKey:"AIzaSyACn_-2BLztKYmBKXtrKNtMsC-2Y238oug",
+  authDomain:"woori-1ecf5.firebaseapp.com",
+  projectId:"woori-1ecf5",
+  storageBucket:"woori-1ecf5.firebasestorage.app",
+  messagingSenderId:"1073097361525",
+  appId:"1:1073097361525:web:3218ced6a040aaaf4d503c",
+  databaseURL:"https://woori-1ecf5-default-rtdb.firebaseio.com"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* ===== Auth ===== */
+let currentUser = null;
+onAuthStateChanged(auth, async (user)=>{
+  currentUser = user || null;
+  if(!user){
+    mePill.textContent = '로그인이 필요합니다';
+    btnLogout.textContent='로그인'; btnLogout.classList.remove('ghost');
+    btnLogout.onclick = ()=> location.href='login.html';
+    btnDashboard.onclick = ()=> location.href='woori-dashboard.html';
+    sList.innerHTML='<div class="k">로그인 후 이용해주세요.</div>';
+    myList.innerHTML='<div class="k">로그인 후 이용해주세요.</div>';
+    return;
+  }
+  if(!user.displayName && user.email){
+    try{ await updateProfile(user,{ displayName: user.email.split('@')[0] }); }catch{}
+  }
+  mePill.textContent = `${user.displayName || '사용자'}님`;
+  btnLogout.textContent='로그아웃'; btnLogout.classList.add('ghost');
+  btnLogout.onclick = ()=> signOut(auth);
+  btnDashboard.onclick = ()=> location.href='woori-dashboard.html';
+
+  // 초기 데이터
+  resetCaseId();
+  subTodaySurgeries();
+  subMyTodayTasks(user.uid);
+});
+
+/* ===== Utils ===== */
+const Z=n=>String(n).padStart(2,'0');
+const day0=(d)=>{const x=new Date(d||Date.now());x.setHours(0,0,0,0);return x;}
+const day1=(d)=>{const x=day0(d);x.setDate(x.getDate()+1);return x;}
+const fmtWhen=(ts)=>{try{const d=ts?.toDate?.()||new Date();return `${d.getFullYear()}-${Z(d.getMonth()+1)}-${Z(d.getDate())} ${Z(d.getHours())}:${Z(d.getMinutes())}`;}catch{return '';}}
+
+function msToHuman(ms){
+  if(!(ms>=0)) return '-';
+  const s=Math.floor(ms/1000);
+  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60;
+  if(h>0) return `${h}시간 ${m}분`;
+  if(m>0) return `${m}분 ${ss}초`;
+  return `${ss}초`;
+}
+function calcDurations(x){
+  const created=x.createdAt?.toDate?.() || null;
+  const ts=x.timestamps||{};
+  const started=ts.startedAt?.toDate?.() || null;
+  const done=ts.doneAt?.toDate?.() || null;
+  const now=new Date();
+  const waitMs = created ? (started ? (started - created) : (now - created)) : null;
+  const progMs = started ? (done ? (done - started) : (now - started)) : null;
+  const totalMs= created ? (done ? (done - created) : (now - created)) : null;
+  return { created, started, done, waitMs, progMs, totalMs };
+}
+function mkChip(t,cls=''){ const s=document.createElement('span'); s.className='chip'+(cls?(' '+cls):''); s.textContent=t; return s; }
+function btn(label, fn, extraCls=''){ const b=document.createElement('button'); b.className='btn small'+(extraCls?(' '+extraCls):''); b.textContent=label; b.onclick=fn; return b; }
+
+/* ===== CaseId ===== */
+function makeCaseId(){
+  const d=new Date(); const y=d.getFullYear(), m=Z(d.getMonth()+1), da=Z(d.getDate());
+  const rand=Math.floor(Math.random()*10000).toString().padStart(4,'0');
+  return `S-${y}${m}${da}-${rand}`;
+}
+function resetCaseId(){ sId.value = makeCaseId(); }
+
+/* ===== Save: Transport ===== */
+tSave.addEventListener('click', async ()=>{
+  if(!auth.currentUser) return alert('로그인 후 이용해주세요.');
+  const dept=(tDept.value||'').trim(); if(!dept) return alert('목적지/부서를 입력하세요.');
+  const mob=tMob.value; const pri=tPri.value; const note=(tNote.value||'').trim();
+  const empUid=auth.currentUser.uid, empName=auth.currentUser.displayName||'(사용자)';
+  const line = `▶ ${dept}`.trim();
+  try{
+    await addDoc(collection(db,'wardTasks'),{
+      assignedTo:{ uid:empUid, name:empName },
+      room:'', patient:'', dept, mobility:mob, priority:pri, note,
+      text: line, category:'transport',
+      status:'open',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      timestamps:{ createdAt: serverTimestamp() },
+      createdBy:{ uid:empUid, name:empName }
+    });
+    tDept.value=''; tNote.value=''; tMob.value='bed'; tPri.value='Routine';
+    alert('이송업무가 등록되었습니다.');
+  }catch(e){ alert(e.message||e.code||e); }
+});
+
+/* ===== Misc modal ===== */
+openMisc?.addEventListener('click', ()=>{
+  mTitle.value=''; mDept.value=''; mPri.value='Routine'; mNote.value='';
+  miscModal.style.display='flex'; miscModal.setAttribute('aria-hidden','false');
+});
+miscCancel?.addEventListener('click', ()=>{ miscModal.style.display='none'; miscModal.setAttribute('aria-hidden','true'); });
+miscModal?.addEventListener('click', (e)=>{ if(e.target===miscModal){ miscModal.style.display='none'; miscModal.setAttribute('aria-hidden','true'); } });
+
+miscSave?.addEventListener('click', async ()=>{
+  if(!auth.currentUser) return alert('로그인 후 이용해주세요.');
+  const title=(mTitle.value||'').trim(); if(!title) return alert('업무 제목을 입력하세요.');
+  const dept=(mDept.value||'').trim(); const pri=mPri.value; const note=(mNote.value||'').trim();
+  const empUid=auth.currentUser.uid, empName=auth.currentUser.displayName||'(사용자)';
+  const line = `[기타] ${title} ▶ ${dept||'-'}`.trim();
+  try{
+    await addDoc(collection(db,'wardTasks'),{
+      assignedTo:{ uid:empUid, name:empName },
+      room:'', patient:'', dept, mobility:'walk',
+      priority:pri, note,
+      text: line, category:'misc',
+      status:'open',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      timestamps:{ createdAt: serverTimestamp() },
+      createdBy:{ uid:empUid, name:empName },
+      title
+    });
+    miscModal.style.display='none'; miscModal.setAttribute('aria-hidden','true');
+    alert('기타 업무가 등록되었습니다.');
+  }catch(e){ alert(e.message||e.code||e); }
+});
+
+/* ===== Save: Surgery (PII-free) ===== */
+sSave.addEventListener('click', async ()=>{
+  if(!auth.currentUser) return alert('로그인 후 이용해주세요.');
+  const caseId=(sId.value||'').trim();
+  const dept=sDept.value;
+  const name=(sName.value||'').trim();
+  const note=(sNote.value||'').trim();
+  if(!name) return alert('수술명을 입력하세요.');
+  // 간단 PII 가드
+  const pii = /\b(\d{2,3}-\d{3,4}-\d{4}|\d{6}-\d{7}|\d{8})\b/;
+  if(pii.test(note)) return alert('메모에 개인정보(전화/주민/생년월일)가 포함된 것 같아요. 제거 후 저장해주세요.');
+
+  const empUid=auth.currentUser.uid, empName=auth.currentUser.displayName||'(사용자)';
+  try{
+    await addDoc(collection(db,'surgeries'),{
+      caseId, surgeryDept:dept, surgeryName:name, note,
+      status:'waiting',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      timestamps:{}, // startedAt, doneAt, reopenedAt, editedAt 등 추후 기록
+      createdBy:{ uid:empUid, name:empName }
+    });
+    alert('수술이 등록되었습니다.');
+    sName.value=''; sNote.value=''; resetCaseId();
+  }catch(e){ alert(e.message||e.code||e); }
+});
+
+/* ===== Today Surgeries (recent 5) ===== */
+let unsubS=null;
+function subTodaySurgeries(){
+  try{unsubS&&unsubS();}catch{}
+  sList.innerHTML='<div class="k">불러오는 중…</div>';
+  const start=day0(); const end=day1();
+  const qy=query(
+    collection(db,'surgeries'),
+    where('createdAt','>=',Timestamp.fromDate(start)),
+    where('createdAt','<',Timestamp.fromDate(end)),
+    orderBy('createdAt','desc'),
+    limit(5)
+  );
+  unsubS = onSnapshot(qy, snap=>{
+    const arr = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    sCount.textContent = `${arr.length}건`;
+    if(!arr.length){ sList.innerHTML='<div class="k">표시할 수술이 없습니다.</div>'; return; }
+    const frag=document.createDocumentFragment();
+    arr.forEach(x=>{
+      const el=document.createElement('div'); el.className='s-item';
+      const statusK = x.status==='waiting'?'수술대기':x.status==='operating'?'수술진행중':'완료';
+      const chipClass = x.status==='waiting'?'stat-open':x.status==='operating'?'stat-prog':'stat-done';
+
+      // 시간 요약
+      const d=calcDurations(x);
+      const lines=[];
+      lines.push(`<div class="k">등록: ${x.createdAt?esc(fmtWhen(x.createdAt)):'-'}</div>`);
+      lines.push(`<div class="k">대기: ${d.waitMs!=null?esc(msToHuman(d.waitMs)):'-'}</div>`);
+      lines.push(`<div class="k">진행: ${d.progMs!=null?esc(msToHuman(d.progMs)):'-'}</div>`);
+      lines.push(`<div class="k">총계: ${d.totalMs!=null?esc(msToHuman(d.totalMs)):'-'}</div>`);
+
+      el.innerHTML = `
+        <div>
+          <div><b>${esc(x.surgeryDept||'-')}</b> · ${esc(x.surgeryName||'-')}</div>
+          ${lines.join('')}
+          ${x.note?`<div class="k">${esc(x.note)}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <span class="chip ${chipClass}">${statusK}</span>
+          <div class="row" style="gap:6px">
+            <button class="btn small" data-act="toggle" data-id="${x.id}">상태전환</button>
+            <button class="btn small" data-act="edit" data-id="${x.id}">편집</button>
+            <button class="btn danger small" data-act="del" data-id="${x.id}">삭제</button>
+          </div>
+          <span class="k">#${esc(x.caseId||'-')}</span>
+        </div>
+      `;
+      frag.appendChild(el);
+    });
+    sList.innerHTML=''; sList.appendChild(frag);
+  }, err=>{
+    sList.innerHTML = `<div class="k">목록 오류: ${esc(err.message||err.code||'')}</div>`;
+  });
+}
+sReload.addEventListener('click', ()=> subTodaySurgeries());
+
+/* 수술 리스트 버튼들 */
+sList.addEventListener('click', async (e)=>{
+  const btnEl=e.target.closest('button'); if(!btnEl) return;
+  const id = btnEl.dataset.id, act=btnEl.dataset.act;
+  if(!id) return;
+
+  if(act==='toggle'){
+    const ref=doc(db,'surgeries',id);
+    const snap=await getDoc(ref).catch(()=>null);
+    const x=snap?.data(); if(!x) return;
+    const next = x.status==='waiting'?'operating':(x.status==='operating'?'done':'waiting');
+    const patch={ status:next, updatedAt: serverTimestamp() };
+    if(x.status!==next){
+      if(next==='operating')      patch['timestamps.startedAt']=serverTimestamp();
+      else if(next==='done')      patch['timestamps.doneAt']=serverTimestamp();
+      else if(next==='waiting')   patch['timestamps.reopenedAt']=serverTimestamp();
+    }
+    try{ await updateDoc(ref, patch); }catch(e){ alert(e.message||e.code||e); }
+  }else if(act==='del'){
+    if(!auth.currentUser) return alert('로그인 필요');
+    const ref=doc(db,'surgeries',id); const snap=await getDoc(ref).catch(()=>null); const x=snap?.data(); if(!x) return;
+    if(!(x.createdBy?.uid===auth.currentUser.uid)){ return alert('작성자만 삭제할 수 있습니다.'); }
+    if(!confirm('이 수술 기록을 삭제할까요?')) return;
+    try{ await deleteDoc(ref); }catch(e){ alert(e.message||e.code||e); }
+  }else if(act==='edit'){
+    openSurgeryEdit(id);
+  }
+});
+
+/* ===== 수술 편집 모달 ===== */
+let editingSurgeryId=null, beforeStatus=null;
+async function openSurgeryEdit(id){
+  const ref=doc(db,'surgeries',id);
+  const snap=await getDoc(ref).catch(()=>null);
+  const x=snap?.data(); if(!x) return alert('존재하지 않는 문서입니다.');
+  if(!auth.currentUser) return alert('로그인 필요');
+  if(x.createdBy?.uid!==auth.currentUser.uid) return alert('작성자만 수정할 수 있습니다.');
+
+  editingSurgeryId=id;
+  seId.value = x.caseId || '';
+  seDept.value = x.surgeryDept || 'NS';
+  seName.value = x.surgeryName || '';
+  seNote.value = x.note || '';
+  seStatus.value = x.status || 'waiting';
+  beforeStatus = x.status || 'waiting';
+
+  // 시간 요약 표시
+  const d=calcDurations(x);
+  seTimes.innerHTML = `
+    등록: ${x.createdAt?esc(fmtWhen(x.createdAt)):'-'} ·
+    대기: ${d.waitMs!=null?esc(msToHuman(d.waitMs)):'-'} ·
+    진행: ${d.progMs!=null?esc(msToHuman(d.progMs)):'-'} ·
+    총계: ${d.totalMs!=null?esc(msToHuman(d.totalMs)):'-'}
+  `;
+
+  sEditModal.style.display='flex'; sEditModal.setAttribute('aria-hidden','false');
+}
+sEditCancel.addEventListener('click', ()=>{
+  sEditModal.style.display='none'; sEditModal.setAttribute('aria-hidden','true');
+});
+sEditModal.addEventListener('click', (e)=>{ if(e.target===sEditModal){ sEditModal.style.display='none'; sEditModal.setAttribute('aria-hidden','true'); }});
+
+sEditSave.addEventListener('click', async ()=>{
+  if(!editingSurgeryId) return;
+  const note=(seNote.value||'').trim();
+  const pii = /\b(\d{2,3}-\d{3,4}-\d{4}|\d{6}-\d{7}|\d{8})\b/;
+  if(pii.test(note)) return alert('메모에 개인정보(전화/주민/생년월일)가 포함된 것 같아요. 제거 후 저장해주세요.');
+
+  const patch={
+    surgeryDept: seDept.value,
+    surgeryName: (seName.value||'').trim(),
+    note,
+    status: seStatus.value,
+    updatedAt: serverTimestamp(),
+    'timestamps.editedAt': serverTimestamp()
+  };
+  if(beforeStatus !== seStatus.value){
+    if(seStatus.value==='operating')      patch['timestamps.startedAt']=serverTimestamp();
+    else if(seStatus.value==='done')      patch['timestamps.doneAt']=serverTimestamp();
+    else if(seStatus.value==='waiting')   patch['timestamps.reopenedAt']=serverTimestamp();
+  }
+  try{
+    await updateDoc(doc(db,'surgeries',editingSurgeryId), patch);
+    sEditModal.style.display='none'; sEditModal.setAttribute('aria-hidden','true');
+    alert('수정되었습니다.');
+  }catch(e){ alert(e.message||e.code||e); }
+});
+
+/* ===== My tasks (today) ===== */
+let unsubMine=null;
+function subMyTodayTasks(uid){
+  try{unsubMine&&unsubMine();}catch{}
+  const start=day0(); const end=day1();
+  const qy=query(
+    collection(db,'wardTasks'),
+    where('assignedTo.uid','==',uid),
+    where('createdAt','>=',Timestamp.fromDate(start)),
+    where('createdAt','<',Timestamp.fromDate(end)),
+    orderBy('createdAt','asc')
+  );
+  unsubMine = onSnapshot(qy, snap=>{
+    if(snap.empty){ myList.innerHTML='<div class="k">오늘 등록된 업무가 없습니다.</div>'; return; }
+    const frag=document.createDocumentFragment();
+    let idx=1;
+    snap.forEach(d=>{
+      const x=d.data(); const id=d.id;
+      const el=document.createElement('div'); el.className='task';
+      const left=document.createElement('div');
+      const chips=document.createElement('div'); chips.className='chips';
+      chips.appendChild(mkChip(String(idx++)));
+      chips.appendChild(mkChip(x.category==='misc'?'기타':'이송'));
+      chips.appendChild(mkChip(x.priority==='STAT'?'긴급':'보통', x.priority==='STAT'?'warn':'' ));
+      const st= x.status==='open'?'대기':x.status==='in_progress'?'진행중':'완료';
+      const stc= x.status==='open'?'stat-open':x.status==='in_progress'?'stat-prog':'stat-done';
+      chips.appendChild(mkChip(st, stc));
+      if(x.category!=='misc'){
+        const mobK = x.mobility==='bed'?'이동침대':(x.mobility==='wheelchair'?'휠체어':'도보');
+        chips.appendChild(mkChip(mobK));
+      }
+      const title=document.createElement('div'); title.innerHTML=`<b>${esc(x.text||'')}</b>`;
+      left.appendChild(chips); left.appendChild(title);
+
+      const right=document.createElement('div'); right.style.textAlign='right';
+      const lines=[];
+      lines.push(`<div class="k">${esc(x.assignedTo?.name||'-')}</div>`);
+      lines.push(`<div class="k">생성: ${fmtWhen(x.createdAt)}</div>`);
+      const ts=x.timestamps||{};
+      if(ts.startedAt) lines.push(`<div class="k">시작: ${fmtWhen(ts.startedAt)}</div>`);
+      if(ts.doneAt)    lines.push(`<div class="k">완료: ${fmtWhen(ts.doneAt)}</div>`);
+      const btnRow=document.createElement('div'); btnRow.className='row'; btnRow.style.marginTop='6px';
+
+      // 상태 전환(대기→진행중→완료→대기)
+      btnRow.appendChild(btn('상태전환', async ()=>{
+        const next = x.status==='open' ? 'in_progress' : (x.status==='in_progress' ? 'done' : 'open');
+        const patch = { status: next, updatedAt: serverTimestamp() };
+        if(x.status!==next){
+          if(next==='in_progress') patch['timestamps.startedAt']=serverTimestamp();
+          else if(next==='done')   patch['timestamps.doneAt']=serverTimestamp();
+          else if(next==='open')   patch['timestamps.reopenedAt']=serverTimestamp();
+        }
+        try{ await updateDoc(doc(db,'wardTasks',id), patch); }
+        catch(e){ alert(`상태 변경 실패: ${e.code||e.message}`); }
+      }));
+
+      // 삭제(담당자/작성자만 규칙 허용)
+      btnRow.appendChild(btn('삭제', async ()=>{
+        if(!confirm('이 업무를 삭제할까요?')) return;
+        try{ await deleteDoc(doc(db,'wardTasks',id)); }
+        catch(e){ alert(`삭제 실패: ${e.code||e.message}`); }
+      }, 'danger'));
+
+      right.innerHTML=lines.join('');
+      right.appendChild(btnRow);
+
+      el.appendChild(left); el.appendChild(right);
+      frag.appendChild(el);
+    });
+    myList.innerHTML=''; myList.appendChild(frag);
+  }, err=>{
+    myList.innerHTML=`<div class="k">목록 오류: ${esc(err.message||err.code||'')}</div>`;
+  });
+}
+</script>
+</body>
+</html>

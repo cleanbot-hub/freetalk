@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="icon" href="data:,">
+  <title>Posting</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f7f8fb;--ink:#0f1724;--muted:#6b7280;--accent:#6d28d9;--accent2:#7c3aed;
+      --danger:#ef4444;--bd:#e5e7eb;--radius:12px;--max:980px
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:var(--max);margin:16px auto;padding:12px}
+    header.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:#fff;color:#111;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff;border:0}
+    .btn.danger{background:var(--danger);color:#fff;border:0}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--bd);background:#f8fafc;font-size:12px;color:#374151}
+    .card{background:#fff;border:1px solid var(--bd);border-radius:var(--radius);box-shadow:0 8px 26px rgba(2,6,23,.06);padding:14px}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .list{display:flex;flex-direction:column;gap:12px}
+    .post{border:1px solid #eef;border-radius:12px;padding:14px;background:#fff}
+    .post-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
+    .title-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .title{font-size:18px;font-weight:700}
+    .nick{font-size:12px;color:#4b5563}
+    .meta{font-size:12px;color:var(--muted)}
+    .content{white-space:pre-wrap;line-height:1.6;margin-top:8px;padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #f0f2f5}
+    .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .like{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;border:1px solid var(--bd);background:#fff;cursor:pointer}
+    .like.on{background:#f3f0ff;border-color:#ddd}
+    .cmts{margin-top:12px;border-top:1px solid var(--bd);padding-top:12px}
+    .cmt{padding:10px;border:1px solid #f0f2f5;border-radius:10px;background:#fff;margin-bottom:8px}
+    .cmt-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px;gap:8px}
+    .cmt-body{white-space:pre-wrap}
+    .row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+    .field{flex:1;min-width:200px;padding:11px 12px;border-radius:10px;border:1px solid var(--bd);background:#fff}
+    .empty{color:var(--muted);text-align:center;padding:18px;background:#fafbff;border-radius:10px;border:1px dashed #e5e7eb}
+    .imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px}
+    .thumb{position:relative;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff}
+    .thumb img{width:100%;height:120px;object-fit:cover;display:block;transition:transform .18s ease}
+    .thumb:hover img{transform:scale(1.03)}
+    .x{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:0;border-radius:8px;padding:2px 6px;cursor:pointer}
+    /* === Lightbox === */
+    .viewer-backdrop{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;padding-top:max(8px,env(safe-area-inset-top))}
+    .viewer-wrap{position:relative;max-width:96vw;max-height:92vh}
+    .viewer-img{max-width:96vw;max-height:92vh;object-fit:contain;display:block;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.35);user-select:none}
+    .viewer-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);padding:10px 12px;border-radius:10px;cursor:pointer;backdrop-filter:blur(6px)}
+    .viewer-prev{left:8px}.viewer-next{right:8px}
+    .viewer-close{position:fixed;top:max(16px,env(safe-area-inset-top));right:16px;z-index:9999;background:rgba(0,0,0,.55);color:#fff;border:0;padding:8px 12px;border-radius:10px;cursor:pointer;backdrop-filter:blur(6px)}
+    @media (max-width:480px){
+      header.top{flex-wrap:wrap}
+      .nav{justify-content:flex-start}
+      .toolbar{flex-direction:column;align-items:flex-start}
+      .content{padding:10px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/index.html"><strong>Posting</strong></a>
+    <nav class="nav">
+      
+      <a class="btn" href="/chat.html">채팅</a>
+      <button id="btn-new" class="btn primary">글쓰기</button>
+      <button id="btn-logout" class="btn">로그아웃</button>
+    </nav>
+  </header>
+
+  <section class="card">
+    <div class="toolbar">
+      <div><strong>POST</strong> <span id="post-count" class="badge">0 posts</span></div>
+      <span class="badge">로그인한 사용자만 글/댓글/좋아요/사진 업로드 가능</span>
+    </div>
+    <div id="post-list" class="list"><div class="empty">아직 글이 없습니다. 첫 글을 올려보세요!</div></div>
+  </section>
+</div>
+
+<!-- Lightbox -->
+<div id="viewer" class="viewer-backdrop" aria-hidden="true">
+  <div class="viewer-wrap">
+    <img id="viewer-img" class="viewer-img" alt="미리보기">
+    <button id="viewer-close" class="viewer-close" type="button">닫기 ✕</button>
+    <button id="viewer-prev"  class="viewer-btn viewer-prev"  type="button">‹</button>
+    <button id="viewer-next"  class="viewer-btn viewer-next"  type="button">›</button>
+  </div>
+</div>
+
+<!-- Cloudinary Upload Widget -->
+<script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+<script type="module">
+/* ============== Firebase ============== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy,
+  doc, updateDoc, deleteDoc, setDoc, getDoc
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import {
+  getDatabase, ref, onValue, set as rset, onDisconnect, serverTimestamp as rtdbNow
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+const cfg = {
+  apiKey:"AIzaSyACn_-2BLztKYmBKXtrKNtMsC-2Y238oug",
+  authDomain:"woori-1ecf5.firebaseapp.com",
+  projectId:"woori-1ecf5",
+  storageBucket:"woori-1ecf5.firebasestorage.app",
+  messagingSenderId:"1073097361525",
+  appId:"1:1073097361525:web:3218ced6a040aaaf4d503c",
+  databaseURL:"https://woori-1ecf5-default-rtdb.firebaseio.com"
+};
+const app = initializeApp(cfg);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const rtdb = getDatabase(app);
+
+/* ============== Cloudinary 설정 ============== */
+const CLOUD_NAME = 'dnx6obtjb';
+const UPLOAD_PRESET = 'sj_exe';
+
+/* ============== DOM ============== */
+const $ = (id)=>document.getElementById(id);
+const listEl = $('post-list'), countEl = $('post-count');
+const newBtn = $('btn-new'), logoutBtn = $('btn-logout');
+const presBadge = $('presBadge');
+
+/* ============== 모달 ============== */
+document.body.insertAdjacentHTML('beforeend', `
+<div id="modal" class="backdrop" aria-hidden="true" style="position:fixed;inset:0;background:rgba(2,6,23,.45);display:none;align-items:center;justify-content:center;z-index:80">
+  <div class="modal" role="dialog" aria-modal="true" style="width:100%;max-width:640px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 18px 50px rgba(2,6,23,.35)">
+    <h3 id="modal-title">글쓰기</h3>
+    <input id="input-title" class="field" placeholder="제목 (예: 게시글 제목)" style="width:100%">
+    <textarea id="input-body" class="field" rows="6" placeholder="내용" style="width:100%"></textarea>
+    <div class="row">
+      <button id="btn-photo" class="btn" type="button">사진 추가</button>
+      <span class="badge">최대 5장 · 업로드 전 자동 리사이즈</span>
+    </div>
+    <div id="preview" class="imgs"></div>
+    <div class="row" style="justify-content:flex-end">
+      <button id="modal-cancel" class="btn" type="button">취소</button>
+      <button id="modal-save" class="btn primary" type="button">저장</button>
+    </div>
+    <input id="fallback-file" type="file" accept="image/*" multiple style="display:none">
+  </div>
+</div>
+`);
+const modal = $('modal');
+const inputTitle = $('input-title'), inputBody = $('input-body');
+const btnPhoto = $('btn-photo'), modalSave = $('modal-save');
+const preview = $('preview'); const fallbackInput = $('fallback-file');
+
+/* ============== 유틸 ============== */
+const err = (e)=>{ console.error(e); alert( {"permission-denied":"권한이 없습니다.","unauthenticated":"로그인이 필요합니다."}[e?.code] || ('오류: ' + (e?.message || e?.statusText || JSON.stringify(e))) ); };
+const escapeHtml=(s)=>String(s).replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(ts)=>{ try{ const d=ts?.toDate?.()||new Date(); return d.toLocaleString(); }catch{ return '' } };
+const thumb=(pid,w=800)=>`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto,c_fill,w_${w}/${pid}.jpg`;
+const full =(pid,w=2000)=>`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto,c_limit,w_${w}/${pid}.jpg`;
+
+/* ============== 닉네임 보장 ============== */
+async function ensureNickname(u){
+  const uRef=doc(db,'users',u.uid); const snap=await getDoc(uRef);
+  let nick=snap.data()?.nickname?.trim();
+  if(!nick){
+    nick = u.displayName?.trim() || (u.email ? u.email.split('@')[0] : '') || '';
+    while(!nick || nick.length<2 || nick.length>20){
+      nick=(prompt('처음 오셨네요! 사용할 별명을 입력하세요 (2~20자)')||'').trim();
+      if(nick===null) break;
+    }
+    if(!nick) nick='손님';
+    await setDoc(uRef,{ nickname:nick },{ merge:true });
+    try{ await updateProfile(u,{ displayName:nick }); }catch{}
+  }
+  return nick;
+}
+
+/* ============== 상태 ============== */
+let myNick='사용자', isAdmin=false, postsCache=[];
+let draftImages=[]; // { pid, url, w, h }
+let mode='new', editingId=null, editingData=null;
+let myPresenceRef=null;
+
+/* ============== Lightbox ============== */
+const viewerEl  = $('viewer');
+const vImgEl    = $('viewer-img');
+$('viewer-close').onclick = ()=>{ viewerEl.style.display='none'; viewerEl.setAttribute('aria-hidden','true'); vImgEl.src=''; document.body.style.overflow=''; };
+$('viewer-prev').onclick  = ()=>show(-1);
+$('viewer-next').onclick  = ()=>show(+1);
+let vImages=[], vIdx=0;
+function openViewer(images, startIdx=0){
+  vImages = images||[]; vIdx = Math.max(0, Math.min(startIdx, vImages.length-1));
+  if(!vImages.length) return;
+  vImgEl.src = full(vImages[vIdx]); viewerEl.style.display='flex';
+  viewerEl.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
+}
+function show(delta){ if(!vImages.length) return; vIdx=(vIdx+delta+vImages.length)%vImages.length; vImgEl.src=full(vImages[vIdx]); }
+viewerEl.addEventListener('click',(e)=>{ if(e.target===viewerEl) $('viewer-close').click(); });
+
+/* ============== 인증 & presence ============== */
+onAuthStateChanged(auth, async (u)=>{
+  if(!u){ location.replace('/login.html'); return; }
+  myNick = await ensureNickname(u);
+  try{ isAdmin = (await getDoc(doc(db,'admins',u.uid))).exists(); renderAll(); }catch{}
+  // RTDB: 내 presence set & onDisconnect remove
+  myPresenceRef = ref(rtdb, `presence/global/${u.uid}`);
+  await rset(myPresenceRef, { nickname: myNick, at: rtdbNow() }).catch(()=>{});
+  onDisconnect(myPresenceRef).remove().catch(()=>{});
+  // 전체 인원 수 구독 (뱃지가 있으면 갱신)
+  onValue(ref(rtdb,'presence/global'), (snap)=>{
+    if(!presBadge) return;
+    const obj=snap.val()||{};
+   
+  });
+});
+
+/* ============== 글 목록 ============== */
+const postsQ = query(collection(db,'communityPosts'), orderBy('createdAt','desc'));
+onSnapshot(postsQ,(snap)=>{ postsCache=[]; snap.forEach(d=>postsCache.push({id:d.id,data:d.data()})); renderAll(); }, err);
+
+function renderAll(){
+  listEl.innerHTML=''; countEl.textContent=`${postsCache.length} posts`;
+  if(postsCache.length===0){
+    const em=document.createElement('div'); em.className='empty'; em.textContent='아직 글이 없습니다. 첫 글을 올려보세요!'; listEl.appendChild(em); return;
+  }
+  postsCache.forEach(p=>renderPost(p.id,p.data));
+}
+
+function renderPost(id, data){
+  const el=document.createElement('div'); el.className='post';
+  let imgsHtml=''; if(Array.isArray(data.images) && data.images.length){
+    imgsHtml = `<div class="imgs">${data.images.map(img=>`<div class="thumb"><img src="${thumb(img.pid,600)}" alt="사진"></div>`).join('')}</div>`;
+  }
+  el.innerHTML=`
+    <div class="post-header">
+      <div class="title-line">
+        <div class="title">${escapeHtml(data.title||'(제목 없음)')}</div>
+        <span class="badge nick">${escapeHtml(data.authorName || '익명')}</span>
+      </div>
+      <div class="meta">${fmt(data.createdAt)}</div>
+    </div>
+    ${imgsHtml}
+    <div class="content">${escapeHtml(data.body||'')}</div>
+    <div class="actions">
+      <button class="like" data-like="btn" type="button"><span>좋아요</span> <strong data-like="cnt">${data.likesCount||0}</strong></button>
+      ${(data.authorUid===auth.currentUser?.uid || isAdmin) ? `<button class="btn" data-action="edit" type="button">수정</button>` : ``}
+      ${(data.authorUid===auth.currentUser?.uid || isAdmin) ? `<button class="btn danger" data-action="del" type="button">삭제</button>` : ``}
+    </div>
+    <div class="cmts">
+      <div class="badge" style="margin-bottom:8px">댓글</div>
+      <div data-cmts="list"></div>
+      <div class="row">
+        <input class="field" data-cmts="input" placeholder="댓글을 입력하세요">
+        <button class="btn primary" data-cmts="add" type="button">댓글 달기</button>
+      </div>
+    </div>`;
+  // 썸네일 → 라이트박스
+  if (Array.isArray(data.images) && data.images.length){
+    const pids = data.images.map(img => img.pid);
+    el.querySelectorAll('.thumb img').forEach((imgEl, idx)=>{ imgEl.style.cursor='zoom-in'; imgEl.addEventListener('click', ()=> openViewer(pids, idx)); });
+  }
+
+  // 좋아요
+  const likeBtn   = el.querySelector('[data-like="btn"]');
+  const likeCntEl = el.querySelector('[data-like="cnt"]');
+  const likeRef     = doc(db, 'communityPosts', id, 'likes', auth.currentUser?.uid || 'x');
+  const likesColRef = collection(db, 'communityPosts', id, 'likes');
+
+  onSnapshot(likeRef, (s) => {
+    s.exists() ? likeBtn.classList.add('on') : likeBtn.classList.remove('on');
+  });
+  onSnapshot(likesColRef, (ss) => {
+    likeCntEl.textContent = String(ss.size);
+  });
+  likeBtn.onclick = async () => {
+    try {
+      const s = await getDoc(likeRef);
+      if (s.exists()) {
+        await deleteDoc(likeRef);
+      } else {
+        await setDoc(likeRef, { at: serverTimestamp() });
+      }
+    } catch (e) { err(e); }
+  };
+
+  // 수정/삭제
+  el.querySelector('[data-action="edit"]')?.addEventListener('click',()=>openModal('edit',id,data));
+  el.querySelector('[data-action="del"]')?.addEventListener('click', async ()=>{
+    if(!confirm(isAdmin?'이 게시글을 삭제할까요? (관리자)':'삭제할까요?')) return;
+    try{ await deleteDoc(doc(db,'communityPosts',id)); }catch(e){ err(e); }
+  });
+
+  // 댓글 & 대댓글
+  const cmtsList=el.querySelector('[data-cmts="list"]');
+  const input=el.querySelector('[data-cmts="input"]');
+  const addBtn=el.querySelector('[data-cmts="add"]');
+
+  onSnapshot(query(collection(db,'communityPosts',id,'comments'),orderBy('createdAt','asc')),(snap)=>{
+    cmtsList.innerHTML='';
+    if(snap.empty){
+      const em=document.createElement('div'); em.className='empty'; em.textContent='댓글이 없습니다.'; cmtsList.appendChild(em); return;
+    }
+    snap.forEach(c=>{
+      const cd=c.data(); const row=document.createElement('div'); row.className='cmt';
+      row.innerHTML=`
+        <div class="cmt-head">
+          <span>${escapeHtml(cd.authorName||'익명')} · ${fmt(cd.createdAt)}</span>
+          ${(cd.authorUid===auth.currentUser?.uid || isAdmin) ? `
+            <div>${cd.authorUid===auth.currentUser?.uid ? `<button class="btn" data-cmd="edit" type="button">수정</button>`:''}
+              <button class="btn danger" data-cmd="del" type="button">삭제</button></div>` : ``}
+        </div>
+        <div class="cmt-body">${escapeHtml(cd.text||'')}</div>
+        <div class="replies">
+          <div class="badge" style="margin:6px 0">답글</div>
+          <div data-replies="list"></div>
+          <div class="row">
+            <input class="field" data-replies="input" placeholder="답글을 입력하세요">
+            <button class="btn" data-replies="add" type="button">답글 달기</button>
+          </div>
+        </div>`;
+      // 댓글 편집/삭제
+      row.querySelector('[data-cmd="edit"]')?.addEventListener('click', async ()=>{
+        const t=prompt('댓글 내용을 수정하세요.',cd.text||''); if(t==null) return;
+        const nt=(t||'').trim(); if(!nt) return alert('내용을 입력하세요.');
+        try{ await updateDoc(doc(db,'communityPosts',id,'comments',c.id),{ text:nt }); }catch(e){ err(e); }
+      });
+      row.querySelector('[data-cmd="del"]')?.addEventListener('click', async ()=>{
+        if(!confirm(isAdmin?'이 댓글을 삭제할까요? (관리자)':'댓글을 삭제할까요?')) return;
+        try{ await deleteDoc(doc(db,'communityPosts',id,'comments',c.id)); }catch(e){ err(e); }
+      });
+
+      // 대댓글
+      const repliesList   = row.querySelector('[data-replies="list"]');
+      const replyInput    = row.querySelector('[data-replies="input"]');
+      const replyAddBtn   = row.querySelector('[data-replies="add"]');
+      const repliesColRef = collection(db,'communityPosts',id,'comments',c.id,'replies');
+
+      onSnapshot(query(repliesColRef, orderBy('createdAt','asc')), (rs)=>{
+        repliesList.innerHTML='';
+        if(rs.empty){
+          const em=document.createElement('div'); em.className='empty'; em.textContent='답글이 없습니다.'; repliesList.appendChild(em); return;
+        }
+        rs.forEach(rDoc=>{
+          const r=rDoc.data();
+          const li=document.createElement('div'); li.className='reply';
+          li.innerHTML = `
+            <div class="head">
+              <span>${escapeHtml(r.authorName||'익명')} · ${fmt(r.createdAt)}</span>
+              ${(r.authorUid===auth.currentUser?.uid || isAdmin) ? `
+                <div>${r.authorUid===auth.currentUser?.uid ? `<button class="btn" data-r="edit" type="button">수정</button>`:''}
+                  <button class="btn danger" data-r="del" type="button">삭제</button></div>` : ``}
+            </div>
+            <div class="body">${escapeHtml(r.text||'')}</div>`;
+          li.querySelector('[data-r="edit"]')?.addEventListener('click', async ()=>{
+            const t=prompt('답글 내용을 수정하세요.', r.text||''); if(t==null) return;
+            const nt=(t||'').trim(); if(!nt) return alert('내용을 입력하세요.');
+            try{ await updateDoc(doc(repliesColRef, rDoc.id), { text: nt }); }catch(e){ err(e); }
+          });
+          li.querySelector('[data-r="del"]')?.addEventListener('click', async ()=>{
+            if(!confirm(isAdmin?'이 답글을 삭제할까요? (관리자)':'답글을 삭제할까요?')) return;
+            try{ await deleteDoc(doc(repliesColRef, rDoc.id)); }catch(e){ err(e); }
+          });
+          repliesList.appendChild(li);
+        });
+      }, err);
+
+      replyAddBtn.onclick = async ()=>{
+        try{
+          if(!auth.currentUser) return alert('로그인이 필요합니다.');
+          const t=(replyInput.value||'').trim(); if(!t) return alert('답글 내용을 입력하세요.');
+          await addDoc(repliesColRef, { text:t, authorUid:auth.currentUser.uid, authorName:myNick, createdAt:serverTimestamp() });
+          replyInput.value='';
+        }catch(e){ err(e); }
+      };
+
+      cmtsList.appendChild(row);
+    });
+  });
+
+  // 새 댓글
+  addBtn.onclick = async ()=>{
+    try{
+      if(!auth.currentUser) return alert('로그인이 필요합니다.');
+      const t=(input.value||'').trim(); if(!t) return alert('댓글 내용을 입력하세요.');
+      await addDoc(collection(db,'communityPosts',id,'comments'),{
+        text:t, authorUid:auth.currentUser.uid, authorName:myNick, createdAt:serverTimestamp()
+      });
+      input.value='';
+    }catch(e){ err(e); }
+  };
+
+  listEl.appendChild(el);
+}
+
+/* ============== 모달 open/close ============== */
+function openModal(m,id=null,data=null){
+  mode=m; editingId=id; editingData=data;
+  draftImages = Array.isArray(data?.images) ? [...data.images] : [];
+  $('modal-title').textContent = (m==='new')?'글쓰기':'글 수정';
+  inputTitle.value = data?.title || ''; inputBody.value  = data?.body  || '';
+  modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); inputTitle.focus();
+  renderPreview();
+}
+function closeModal(){
+  modal.style.display='none'; modal.setAttribute('aria-hidden','true');
+  inputTitle.value=''; inputBody.value=''; draftImages=[]; renderPreview();
+}
+$('modal-cancel').onclick = closeModal;
+modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+newBtn.onclick = ()=>openModal('new');
+
+/* ============== Cloudinary 업로드 ============== */
+function addImageFromCloudinary(info){
+  draftImages.push({ pid: info.public_id, url: info.secure_url, w: info.width, h: info.height });
+  renderPreview();
+}
+let widget = null;
+function openUploadWidget(){
+  if (!window.cloudinary || !window.cloudinary.createUploadWidget) { fallbackInput.click(); return; }
+  if (!widget){
+    widget = window.cloudinary.createUploadWidget({
+      cloudName: CLOUD_NAME,
+      uploadPreset: UPLOAD_PRESET,
+      sources: ['local','url','camera'],
+      multiple: true,
+      maxFiles: 5,
+      clientAllowedFormats: ['jpg','jpeg','png','webp'],
+      folder: 'freetalk/neungi',
+      resourceType: 'image'
+    }, (error, result) => {
+      if (error) { console.error('Cloudinary widget error:', error); alert('업로드 위젯 오류: ' + (error.message || '알 수 없음')); return; }
+      if (result?.event === 'success') addImageFromCloudinary(result.info);
+    });
+  }
+  widget.open();
+}
+btnPhoto.onclick = openUploadWidget;
+
+fallbackInput.onchange = async (e)=>{
+  const files = Array.from(e.target.files || []);
+  const remain = Math.max(0, 5 - draftImages.length);
+  for (const file of files.slice(0, remain)){
+    try{
+      const blob = await resizeImage(file, 2000);
+      const fd = new FormData();
+      fd.append('upload_preset', UPLOAD_PRESET);
+      fd.append('file', blob, (file.name || 'image') + '.jpg');
+      const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method:'POST', body: fd });
+      const j = await r.json();
+      if (j.error) throw new Error(j.error.message || 'upload failed');
+      addImageFromCloudinary(j);
+    }catch(ex){ console.error(ex); alert('폴백 업로드 실패: ' + (ex.message || ex)); }
+  }
+  e.target.value = '';
+};
+function resizeImage(file, maxSide=2000, quality=0.85){
+  return new Promise((res, rej)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      let w = img.width, h = img.height;
+      if (Math.max(w,h) > maxSide){ const s = maxSide/Math.max(w,h); w = Math.round(w*s); h = Math.round(h*s); }
+      const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(b => b ? res(b) : rej(new Error('resize failed')), 'image/jpeg', quality);
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = rej; img.src = URL.createObjectURL(file);
+  });
+}
+function renderPreview(){
+  preview.innerHTML='';
+  draftImages.forEach((img, idx)=>{
+    const box = document.createElement('div'); box.className='thumb';
+    box.innerHTML = `<img src="${thumb(img.pid,400)}" alt="업로드된 사진"><button class="x" title="제거" type="button">삭제</button>`;
+    box.querySelector('.x').onclick = ()=>{ draftImages.splice(idx,1); renderPreview(); };
+    preview.appendChild(box);
+  });
+}
+
+/* ============== 저장 ============== */
+$('modal-save').onclick = async ()=>{
+  const title = inputTitle.value.trim(); const body  = inputBody.value.trim();
+  if(!title || !body) return alert('제목과 내용을 입력하세요.');
+  try{
+    if(mode==='new'){
+      await addDoc(collection(db,'communityPosts'),{
+        title, body, images: draftImages,
+        authorUid:auth.currentUser.uid, authorName:myNick,
+        likesCount:0, createdAt:serverTimestamp()
+      });
+    }else{
+      await updateDoc(doc(db,'communityPosts',editingId),{ title, body, images: draftImages });
+    }
+    closeModal();
+  }catch(e){ err(e); }
+};
+
+logoutBtn.onclick = async ()=>{
+  try{
+    if(myPresenceRef) {
+      try{ await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js").then(({remove})=>remove(myPresenceRef)); }catch{}
+    }
+    await signOut(auth);
+  }catch(e){ err(e); }
+};
+</script>
+</body>
+</html>

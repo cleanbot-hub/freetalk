@@ -1,4 +1,4 @@
-<!doctype html>
+<!doctype html> 
 <html lang="ko">
 <head>
   <meta charset="utf-8"/>
@@ -20,40 +20,59 @@
     .btn.danger{background:var(--danger);color:#fff;border:0}
     .badge{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--bd);background:#f8fafc;font-size:12px;color:#374151}
     .card{background:#fff;border:1px solid var(--bd);border-radius:12px;box-shadow:0 8px 26px rgba(2,6,23,.06);padding:14px}
-
-    /* 관리자 대시보드 전용 */
+    .muted{color:var(--muted)}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:flex-start;border:1px solid #eef;border-radius:10px;padding:12px}
+    .row-compact{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .field{padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff;width:100%}
+    .empty{color:var(--muted);text-align:center;padding:18px;background:#fafbff;border-radius:10px;border:1px dashed #e5e7eb}
     .tabs{display:flex;gap:8px;margin:8px 0 12px;flex-wrap:wrap}
     .tab{padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:#fff;cursor:pointer}
     .tab.active{background:var(--accent);color:#fff;border-color:transparent}
-    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap}
-    .list{display:flex;flex-direction:column;gap:10px}
-    .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:flex-start;border:1px solid #eef;border-radius:10px;padding:12px}
-    .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .title{font-weight:700}
-    .content{white-space:pre-wrap;line-height:1.55}
     .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px}
-    .empty{color:var(--muted);text-align:center;padding:18px;background:#fafbff;border-radius:10px;border:1px dashed #e5e7eb}
     .grid2{display:grid;grid-template-columns:1fr;gap:12px}
     .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
     @media(min-width:900px){ .grid2{grid-template-columns:1fr 1fr} .grid3{grid-template-columns:1fr 1fr 1fr} }
-    .field{padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff;width:100%}
-    .row-compact{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .warn{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;padding:8px 10px;font-size:13px}
-    .ok{background:#ecfeff;border:1px solid #67e8f9;color:#155e75;border-radius:10px;padding:8px 10px;font-size:13px}
     .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
     .kpi .tile{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px}
     .kpi .num{font-size:22px;font-weight:700}
 
-    /* 일반 홈 전용 */
-    .hero{padding:24px;border:1px solid var(--bd);border-radius:14px;background:#fff;box-shadow:0 8px 26px rgba(2,6,23,.06)}
-    .hero h1{margin:0 0 8px}
-    .hero p{color:var(--muted);margin:4px 0 14px}
-    .cta{display:flex;gap:8px;flex-wrap:wrap}
+    /* ===== 이송 보드 ===== */
+    .board{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:1000px){ .board{grid-template-columns:1fr 1fr 1fr 1fr} }
+    .col{border:1px solid var(--bd);border-radius:12px;padding:10px;background:#fff;min-height:160px}
+    .col h4{margin:0 0 8px;font-size:15px}
+    .slot{border:2px dashed #e5e7eb;border-radius:10px;padding:18px;text-align:center;color:#94a3b8}
+    .card-tp{border:1px solid #eef;border-radius:12px;padding:10px;background:#fff;display:flex;flex-direction:column;gap:6px}
+    .tp-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .tp-line{font-size:13px;color:#374151}
+    .tp-meta{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{border:1px solid #e5e7eb;background:#fafafa;border-radius:999px;padding:2px 8px;font-size:12px}
+    .chip.stat{background:#fff1f2;border-color:#fecaca;color:#b91c1c}
+    .chip.bed{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+    .chip.wheel{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+    .chip.iso{background:#fefce8;border-color:#fde68a;color:#92400e}
+    .tp-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+
+    /* ===== 모달 공통 ===== */
+    .backdrop{position:fixed;inset:0;background:rgba(2,6,23,.45);display:none;align-items:center;justify-content:center;z-index:1200}
+    .modal{width:min(760px,96vw);background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 18px 50px rgba(2,6,23,.35);padding:16px}
+
+    /* Porter picker modal */
+    .porter-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .porter-search{display:flex;gap:8px;margin-bottom:10px}
+    .porter-field{flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:10px}
+    .porter-list{max-height:55vh;overflow:auto;display:flex;flex-direction:column;gap:8px}
+    .porter-item{display:flex;justify-content:space-between;align-items:center;border:1px solid #eef;border-radius:10px;padding:10px;background:#fff}
+    .porter-meta{display:flex;gap:8px;align-items:center}
+    .porter-dot{width:10px;height:10px;border-radius:50%;border:1px solid #16a34a}
+    .porter-dot.on{background:#22c55e}
+    .porter-dot.off{background:#cbd5e1;border-color:#94a3b8}
   </style>
 </head>
 <body>
 
-<!-- ▷ 일반 사용자에게 보이는 홈 -->
+<!-- ▷ 일반 사용자 홈 -->
 <div id="public-home" class="wrap" style="display:none">
   <header class="top">
     <a class="brand" href="/index.html"><strong>Freetalk</strong></a>
@@ -64,18 +83,18 @@
     </nav>
   </header>
 
-  <section class="hero">
-    <h1>자유롭게 소통하는 온라인 커뮤니티</h1>
-    <p>로그인한 사용자는 글/댓글/채팅이 가능합니다.</p>
-    <div class="cta">
+  <section class="card">
+    <h2 style="margin:0 0 8px">자유롭게 소통하는 온라인 커뮤니티</h2>
+    <p class="muted" style="margin:0 0 12px">로그인한 사용자는 글/댓글/채팅이 가능합니다.</p>
+    <div class="row-compact">
       <a class="btn primary" href="/chat.html">바로 채팅하기</a>
       <a class="btn" href="/community.html">커뮤니티 둘러보기</a>
-      <span id="admin-shortcut" class="badge" style="display:none">관리자 계정입니다 · 상단 “관리자” 메뉴로 이동하세요</span>
+      <span id="admin-shortcut" class="badge" style="display:none">관리자 계정입니다 · 상단 “관리자” 메뉴로 이동</span>
     </div>
   </section>
 </div>
 
-<!-- ▷ 관리자에게만 보이는 대시보드 -->
+<!-- ▷ 관리자 대시보드 -->
 <div id="admin-app" class="wrap" style="display:none">
   <header class="top">
     <a class="brand" href="/index.html"><strong>Freetalk</strong> <span class="badge">관리자 대시보드</span></a>
@@ -88,6 +107,7 @@
 
   <div class="tabs">
     <button id="tab-home" class="tab active">요약</button>
+    <button id="tab-transport" class="tab">이송</button>
     <button id="tab-posts" class="tab">게시글</button>
     <button id="tab-chat"  class="tab">채팅</button>
     <button id="tab-comments" class="tab">댓글/답글</button>
@@ -95,12 +115,8 @@
     <button id="tab-admin" class="tab">관리자</button>
   </div>
 
-  <!-- 요약 -->
+  <!-- ===== 요약 ===== -->
   <section id="panel-home" class="card">
-    <div class="toolbar">
-      <strong>개요</strong>
-      <span class="muted">전체 현황 요약 · 최근 게시글/채팅 5개</span>
-    </div>
     <div class="kpi">
       <div class="tile"><div class="muted">게시글</div><div id="kpi-posts" class="num">-</div></div>
       <div class="tile"><div class="muted">댓글</div><div id="kpi-comments" class="num">-</div></div>
@@ -119,15 +135,55 @@
     </div>
   </section>
 
-  <!-- 게시글 -->
+  <!-- ===== 이송(Transport) ===== -->
+  <section id="panel-transport" class="card" style="display:none">
+    <div class="row-compact" style="justify-content:space-between;margin-bottom:10px">
+      <div class="row-compact">
+        <strong>이송 관리</strong>
+        <span id="tp-total" class="badge">0건</span>
+      </div>
+      <div class="row-compact">
+        <button id="btn-tp-new" class="btn primary">이송 요청 만들기</button>
+        <button id="btn-tp-refresh" class="btn">새로고침</button>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="tile"><div class="muted">대기</div><div id="kpi-q" class="num">0</div></div>
+      <div class="tile"><div class="muted">배정됨</div><div id="kpi-a" class="num">0</div></div>
+      <div class="tile"><div class="muted">진행중</div><div id="kpi-p" class="num">0</div></div>
+      <div class="tile"><div class="muted">완료(오늘)</div><div id="kpi-d" class="num">0</div></div>
+    </div>
+
+    <div class="board">
+      <div class="col">
+        <h4>대기</h4>
+        <div id="col-queued" class="list"><div class="slot">대기 없음</div></div>
+      </div>
+      <div class="col">
+        <h4>배정됨</h4>
+        <div id="col-assigned" class="list"><div class="slot">배정 없음</div></div>
+      </div>
+      <div class="col">
+        <h4>진행중</h4>
+        <div id="col-progress" class="list"><div class="slot">진행중 없음</div></div>
+      </div>
+      <div class="col">
+        <h4>완료(오늘)</h4>
+        <div id="col-done" class="list"><div class="slot">완료 없음</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 게시글 ===== -->
   <section id="panel-posts" class="card" style="display:none">
-    <div class="toolbar">
+    <div class="row-compact">
       <div class="row-compact">
         <strong>게시글</strong>
         <span id="post-count" class="badge">0</span>
         <span class="muted">(페이지당 10개)</span>
       </div>
-      <div class="row-compact">
+      <div class="row-compact" style="margin-left:auto">
         <button id="post-del-page" class="btn danger">이 페이지 모두 삭제</button>
         <button id="post-del-all"  class="btn danger">전체 게시글 삭제(위험)</button>
         <div class="pager">
@@ -140,9 +196,9 @@
     <div id="post-list" class="list"><div class="empty">불러오는 중…</div></div>
   </section>
 
-  <!-- 채팅 -->
+  <!-- ===== 채팅 ===== -->
   <section id="panel-chat" class="card" style="display:none">
-    <div class="toolbar">
+    <div class="row-compact" style="justify-content:space-between">
       <div class="row-compact">
         <strong>채팅 메시지</strong>
         <span class="muted">개별 삭제 또는 전체 삭제</span>
@@ -159,9 +215,9 @@
     <div id="chat-list" class="list"><div class="empty">불러오는 중…</div></div>
   </section>
 
-  <!-- 댓글/답글 -->
+  <!-- ===== 댓글/답글 ===== -->
   <section id="panel-comments" class="card" style="display:none">
-    <div class="toolbar">
+    <div class="row-compact" style="justify-content:space-between">
       <div class="row-compact">
         <strong>댓글/답글 관리</strong>
         <span class="muted">게시글 ID를 입력해 댓글/답글을 조회·삭제</span>
@@ -175,9 +231,9 @@
     <div id="cm-list" class="list"><div class="empty">게시글 ID를 입력한 뒤 불러오기를 누르세요.</div></div>
   </section>
 
-  <!-- 사용자/밴 -->
+  <!-- ===== 사용자/밴 ===== -->
   <section id="panel-users" class="card" style="display:none">
-    <div class="toolbar">
+    <div class="row-compact" style="justify-content:space-between">
       <div><strong>사용자 검색/밴</strong></div>
       <div class="muted">별명 또는 UID로 조회 → 밴(정지)/해제</div>
     </div>
@@ -200,14 +256,14 @@
       </div>
     </div>
     <div id="u-info" class="list"><div class="empty">검색 결과가 여기에 표시됩니다.</div></div>
-    <div class="warn" style="margin-top:10px">
-      ⚠️ Firestore 보안규칙에서 <code>bans/{uid}.banned</code>와 <code>until</code>을 검사해 생성(create)을 차단해야 밴이 강제됩니다.
+    <div class="badge" style="margin-top:10px">
+      ⚠️ 보안규칙에서 <code>bans/{uid}.banned</code>와 <code>until</code> 검사로 create 차단 필요
     </div>
   </section>
 
-  <!-- 관리자 -->
+  <!-- ===== 관리자 ===== -->
   <section id="panel-admin" class="card" style="display:none">
-    <div class="toolbar">
+    <div class="row-compact" style="justify-content:space-between">
       <div><strong>관리자 설정</strong></div>
       <span class="muted">별명 또는 UID로 추가 · 목록에서 삭제</span>
     </div>
@@ -226,13 +282,56 @@
   </section>
 </div>
 
+<!-- ===== 이송 요청 만들기 모달 ===== -->
+<div id="tpModal" class="backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 style="margin:0 0 8px">이송 요청 만들기</h3>
+    <div class="grid2">
+      <input id="tp-pid" class="field" placeholder="환자 ID/MRN">
+      <input id="tp-pname" class="field" placeholder="환자 성명">
+      <input id="tp-from" class="field" placeholder="출발지 (예: 71병동-7103)">
+      <input id="tp-to" class="field" placeholder="도착지 (예: CT실)">
+      <select id="tp-pri" class="field">
+        <option value="Routine">보통</option>
+        <option value="STAT">긴급</option>
+      </select>
+      <select id="tp-type" class="field">
+        <option value="bed">침대</option>
+        <option value="wheelchair">휠체어</option>
+        <option value="isolation">격리</option>
+      </select>
+      <input id="tp-sched" type="datetime-local" class="field">
+      <input id="tp-notes" class="field" placeholder="특이사항(선택)">
+    </div>
+    <div class="row-compact" style="justify-content:flex-end;margin-top:10px">
+      <button id="tp-cancel" class="btn">취소</button>
+      <button id="tp-save" class="btn primary">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 포터 선택 모달 ===== -->
+<div id="porterPicker" class="backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="porterTitle">
+    <div class="porter-head">
+      <strong id="porterTitle">포터 선택</strong>
+      <button id="porterCancel" class="btn">닫기</button>
+    </div>
+    <div class="porter-search">
+      <input id="porterQuery" class="porter-field" placeholder="이름(별명) 또는 UID 검색">
+    </div>
+    <div id="porterList" class="porter-list"><div class="empty">목록 불러오는 중…</div></div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
 import {
   getFirestore, collection, query, orderBy, limit, startAfter, getDocs, doc, deleteDoc, getDoc, setDoc,
-  getCountFromServer, serverTimestamp, writeBatch
+  getCountFromServer, serverTimestamp, writeBatch, addDoc, updateDoc, where
 } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import { getDatabase, ref, onValue, serverTimestamp as rtdbNow } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
 /* ===== Firebase ===== */
 const cfg = {
@@ -247,9 +346,12 @@ const cfg = {
 const app = initializeApp(cfg);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+const rtdb = getDatabase(app);
 
-/* ===== DOM ===== */
+/* ===== DOM shortcuts ===== */
 const $ = (id)=>document.getElementById(id);
+
+/* ===== 화면 토글 ===== */
 const adminApp   = $('admin-app');
 const publicHome = $('public-home');
 const logout1 = $('logout1');
@@ -266,27 +368,6 @@ function showAdmin(){
   adminApp.style.display   = 'block';
 }
 
-onAuthStateChanged(auth, async (u)=>{
-  if(!u){ location.replace('/login.html'); return; }
-  try{
-    const a = await getDoc(doc(db,'admins', u.uid));
-    if(!a.exists()){
-      // 비관리자: 대시보드 숨기고 일반 홈 노출 (팝업 없음)
-      showPublic(false);
-      return;
-    }
-    // 관리자: 대시보드 열고 데이터 로드
-    showAdmin();
-    await Promise.all([loadHome(), loadPostPage(1), loadChatPage(1), loadAdmins()]);
-  }catch(e){
-    console.error(e);
-    showPublic(false);
-  }
-});
-const doLogout = ()=>signOut(auth);
-if(logout1) logout1.onclick = doLogout;
-if(logout2) logout2.onclick = doLogout;
-
 /* ===== 유틸 ===== */
 const esc = s=>String(s||'').replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
 const fmt = ts=>{
@@ -296,11 +377,32 @@ const fmt = ts=>{
     return '';
   }catch{ return ''; }
 };
+const err = (e)=>{ console.error(e); alert('오류: '+(e?.message||e?.code||'unknown')); };
+
+/* ===== 인증 & 부팅 ===== */
+onAuthStateChanged(auth, async (u)=>{
+  if(!u){ location.replace('/login.html'); return; }
+  try{
+    const a = await getDoc(doc(db,'admins', u.uid));
+    if(!a.exists()){
+      showPublic(false);
+      return;
+    }
+    showAdmin();
+    await Promise.all([loadHome(), loadPostPage(1), loadChatPage(1), loadAdmins(), loadTransportBoard()]);
+  }catch(e){
+    console.error(e);
+    showPublic(false);
+  }
+});
+const doLogout = ()=>signOut(auth);
+if(logout1) logout1.onclick = doLogout;
+if(logout2) logout2.onclick = doLogout;
 
 /* ===== 홈(요약) ===== */
 async function countCol(pathArr){
-  const ref = collection(db, ...pathArr);
-  const snap = await getCountFromServer(ref);
+  const refc = collection(db, ...pathArr);
+  const snap = await getCountFromServer(refc);
   return snap.data().count || 0;
 }
 async function loadHome(){
@@ -316,12 +418,10 @@ async function loadHome(){
     const x=d.data();
     const el=document.createElement('div'); el.className='row';
     el.innerHTML=`<div>
-      <div class="meta">${fmt(x.createdAt)} · <span class="badge">${esc(x.authorName||'익명')}</span></div>
-      <div class="title">${esc(x.title||'(제목 없음)')}</div>
-      <div class="content">${esc(x.body||'')}</div>
-    </div>
-    <div><button class="btn danger" data-del="${d.id}">삭제</button></div>`;
-    el.querySelector(`[data-del="${d.id}"]`).onclick=()=>deletePostDeep(d.id).catch(console.error).then(()=>el.remove());
+      <div class="muted">${fmt(x.createdAt)} · <span class="badge">${esc(x.authorName||'익명')}</span></div>
+      <div><b>${esc(x.title||'(제목 없음)')}</b></div>
+      <div class="muted" style="margin-top:4px">${esc((x.body||'').slice(0,140))}</div>
+    </div>`;
     homePosts.appendChild(el);
   });
 
@@ -332,11 +432,9 @@ async function loadHome(){
     const x=d.data();
     const el=document.createElement('div'); el.className='row';
     el.innerHTML=`<div>
-      <div class="meta">${fmt(x.createdAt)} · <span class="badge">${esc(x.senderName||'익명')}</span> · <span class="muted">${esc(d.id)}</span></div>
-      <div class="content">${esc(x.text||'')}</div>
-    </div>
-    <div><button class="btn danger" data-cdel="${d.id}">삭제</button></div>`;
-    el.querySelector(`[data-cdel="${d.id}"]`).onclick=()=>deleteDoc(doc(db,'rooms','global','messages',d.id)).catch(console.error).then(()=>el.remove());
+      <div class="muted">${fmt(x.createdAt)} · <span class="badge">${esc(x.senderName||'익명')}</span></div>
+      <div>${esc(x.text||'')}</div>
+    </div>`;
     homeChats.appendChild(el);
   });
 }
@@ -377,9 +475,9 @@ async function loadPostPage(page){
     const x=d.data();
     const el=document.createElement('div'); el.className='row'; el.setAttribute('data-id', d.id);
     el.innerHTML=`<div>
-      <div class="meta">${fmt(x.createdAt)} · <span class="badge">${esc(x.authorName||'익명')}</span></div>
-      <div class="title">${esc(x.title||'(제목 없음)')}</div>
-      <div class="content">${esc(x.body||'')}</div>
+      <div class="muted">${fmt(x.createdAt)} · <span class="badge">${esc(x.authorName||'익명')}</span></div>
+      <div><b>${esc(x.title||'(제목 없음)')}</b></div>
+      <div class="muted" style="margin-top:4px">${esc((x.body||'').slice(0,200))}</div>
     </div>
     <div class="row-compact">
       <button class="btn" data-open-comments="${d.id}">댓글 보기</button>
@@ -423,8 +521,8 @@ async function loadChatPage(page){
     const x=d.data();
     const el=document.createElement('div'); el.className='row';
     el.innerHTML=`<div>
-      <div class="meta">${fmt(x.createdAt)} · <span class="badge">${esc(x.senderName||'익명')}</span> · <span class="muted">${esc(d.id)}</span></div>
-      <div class="content">${esc(x.text||'')}</div>
+      <div class="muted">${fmt(x.createdAt)} · <span class="badge">${esc(x.senderName||'익명')}</span> · <span class="muted">${esc(d.id)}</span></div>
+      <div>${esc(x.text||'')}</div>
     </div>
     <div><button class="btn danger" data-del="${d.id}">삭제</button></div>`;
     el.querySelector(`[data-del="${d.id}"]`).onclick=async()=>{
@@ -459,8 +557,8 @@ async function loadCommentsOfPost(postId){
     const c=cDoc.data();
     const row=document.createElement('div'); row.className='row';
     row.innerHTML=`<div>
-      <div class="meta">댓글 · ${fmt(c.createdAt)} · ${esc(c.authorName||'익명')} · <span class="muted">${esc(cDoc.id)}</span></div>
-      <div class="content">${esc(c.text||'')}</div>
+      <div class="muted">댓글 · ${fmt(c.createdAt)} · ${esc(c.authorName||'익명')} · <span class="muted">${esc(cDoc.id)}</span></div>
+      <div>${esc(c.text||'')}</div>
       <div id="rep-${cDoc.id}" class="list" style="margin-top:8px"><div class="muted">대댓글 불러오는 중…</div></div>
     </div>
     <div class="row-compact"><button class="btn danger" data-cdel="${cDoc.id}">댓글 삭제</button></div>`;
@@ -481,8 +579,8 @@ async function loadCommentsOfPost(postId){
       const rv=r.data();
       const rrow=document.createElement('div'); rrow.className='row';
       rrow.innerHTML=`<div>
-        <div class="meta">↳ 답글 · ${fmt(rv.createdAt)} · ${esc(rv.authorName||'익명')} · <span class="muted">${esc(r.id)}</span></div>
-        <div class="content">${esc(rv.text||'')}</div>
+        <div class="muted">↳ 답글 · ${fmt(rv.createdAt)} · ${esc(rv.authorName||'익명')} · <span class="muted">${esc(r.id)}</span></div>
+        <div>${esc(rv.text||'')}</div>
       </div>
       <div><button class="btn danger" data-rdel="${r.id}">답글 삭제</button></div>`;
       rrow.querySelector(`[data-rdel="${r.id}"]`).onclick=async()=>{
@@ -495,7 +593,7 @@ async function loadCommentsOfPost(postId){
   }
 }
 
-/* ===== 사용자/밴 ===== */
+/* ===== 사용자/밴 & 관리자 ===== */
 const uInfo=$('u-info'), uNick=$('u-nick'), uFindNick=$('u-find-nick'), uUid=$('u-uid'), uFindUid=$('u-find-uid');
 const banReason=$('ban-reason'), banDays=$('ban-days'), uBan=$('u-ban'), uUnban=$('u-unban');
 let currentUserId=null;
@@ -520,9 +618,9 @@ async function showUser(uid){
   const [uSnap, bSnap] = await Promise.all([getDoc(doc(db,'users',uid)), getDoc(doc(db,'bans',uid))]);
   const nick   = uSnap.exists()? (uSnap.data()?.nickname || '(닉네임 없음)') : '(미등록 사용자)';
   const banned = bSnap.exists() && bSnap.data()?.banned === true;
-  const until  = bSnap.exists()? (bSnap.data()?.until || null) : null;
+  const until = bSnap.exists() ? (bSnap.data()?.until || null) : null;
   currentUserId = uid;
-  uInfo.innerHTML = `<div class="${banned?'warn':'ok'}">
+  uInfo.innerHTML = `<div class="${banned?'badge':'badge'}">
     <div><b>UID:</b> ${uid}</div>
     <div><b>닉네임:</b> ${nick}</div>
     <div><b>상태:</b> ${banned? '정지됨':'정상'} ${until? `· ${new Date(until).toLocaleString()} 까지`:''}</div>
@@ -533,7 +631,7 @@ uBan.onclick = async ()=>{
   const days = parseInt(banDays.value||'0',10);
   const until = days>0 ? new Date(Date.now()+days*86400000) : null;
   await setDoc(doc(db,'bans', currentUserId), {
-    banned:true, reason:banReason.value||'', until: until? until.toISOString():null, by:auth.currentUser?.uid||'(unknown)', at:serverTimestamp()
+    banned:true, reason:banReason.value||'', until: until? until : null, by:auth.currentUser?.uid||'(unknown)', at:serverTimestamp()
   }, { merge:true });
   await showUser(currentUserId);
   alert('정지 처리 완료');
@@ -576,8 +674,8 @@ async function loadAdmins(){
   items.forEach(a=>{
     const el=document.createElement('div'); el.className='row';
     el.innerHTML=`<div>
-      <div class="meta">UID: ${esc(a.id)} · 추가: ${fmt(a.meta?.at)}${a.meta?.by?` · by ${esc(a.meta.by)}`:''}</div>
-      <div class="title">${esc(a.nick)}</div>
+      <div class="muted">UID: ${esc(a.id)} · 추가: ${fmt(a.meta?.at)}${a.meta?.by?` · by ${esc(a.meta.by)}`:''}</div>
+      <div><b>${esc(a.nick)}</b></div>
     </div>
     <div><button class="btn danger" data-del="${a.id}">삭제</button></div>`;
     el.querySelector(`[data-del="${a.id}"]`).onclick=async()=>{
@@ -616,14 +714,207 @@ async function deletePostDeep(postId){
   await deleteDoc(doc(db,'communityPosts',postId));
 }
 
-/* ===== 탭 스위치 (관리자 화면에서만) ===== */
-[['tab-home','panel-home'],['tab-posts','panel-posts'],['tab-chat','panel-chat'],['tab-comments','panel-comments'],['tab-users','panel-users'],['tab-admin','panel-admin']]
+/* ===== 이송(Transport) 로직 ===== */
+const tpModal = $('tpModal');
+const tpOpen = $('btn-tp-new');
+const tpCancel = $('tp-cancel');
+const tpSave = $('tp-save');
+const kpiQ=$('kpi-q'), kpiA=$('kpi-a'), kpiP=$('kpi-p'), kpiD=$('kpi-d'), tpTotal=$('tp-total');
+
+tpOpen.onclick = ()=>{ tpModal.style.display='flex'; tpModal.setAttribute('aria-hidden','false'); };
+tpCancel.onclick = ()=>{ tpModal.style.display='none'; tpModal.setAttribute('aria-hidden','true'); };
+tpModal.addEventListener('click',e=>{ if(e.target===tpModal) tpCancel.click(); });
+
+$('btn-tp-refresh').onclick = loadTransportBoard;
+
+async function loadTransportBoard(){
+  const today0 = new Date(); today0.setHours(0,0,0,0);
+  const today1 = new Date(); today1.setHours(23,59,59,999);
+
+  const [qSnap,aSnap,p1Snap,p2Snap,dSnap] = await Promise.all([
+    getDocs(query(collection(db,'transports'), where('status','==','queued'), orderBy('createdAt','asc'))),
+    getDocs(query(collection(db,'transports'), where('status','==','assigned'), orderBy('createdAt','asc'))),
+    getDocs(query(collection(db,'transports'), where('status','==','pickup'), orderBy('createdAt','asc'))),
+    getDocs(query(collection(db,'transports'), where('status','==','enroute'), orderBy('createdAt','asc'))),
+    getDocs(query(collection(db,'transports'), where('status','==','done'), orderBy('createdAt','desc')))
+  ]);
+
+  const colQ=$('col-queued'), colA=$('col-assigned'), colP=$('col-progress'), colD=$('col-done');
+  colQ.innerHTML=''; colA.innerHTML=''; colP.innerHTML=''; colD.innerHTML='';
+
+  let total=0, cQ=0,cA=0,cP=0,cD=0;
+
+  const addCard=(whereEl, docId, x)=>{
+    total++;
+    const el=document.createElement('div'); el.className='card-tp';
+    const pri = x.priority==='STAT' ? 'chip stat' : 'chip';
+    const tchip = x.type==='bed' ? 'chip bed' : (x.type==='wheelchair'?'chip wheel':'chip iso');
+    el.innerHTML = `
+      <div class="tp-head">
+        <div class="tp-meta">
+          <span class="${pri}">${esc(x.priority)}</span>
+          <span class="${tchip}">${esc(x.type)}</span>
+          ${(x.assignedTo?.name)?`<span class="chip">포터: ${esc(x.assignedTo.name)}</span>`:''}
+        </div>
+        <span class="badge">#${docId.slice(0,5)}</span>
+      </div>
+      <div class="tp-line"><b>${esc(x.patient?.name||'환자')}</b> <span class="muted">(${esc(x.patient?.id||'ID없음')})</span></div>
+      <div class="tp-line">${esc(x.from)} <span class="muted">→</span> ${esc(x.to)}</div>
+      ${x.notes?`<div class="tp-line muted">메모: ${esc(x.notes)}</div>`:''}
+      <div class="tp-actions"></div>
+    `;
+    const actions = el.querySelector('.tp-actions');
+
+    if(x.status==='queued'){
+      const b1=document.createElement('button'); b1.className='btn primary'; b1.textContent='배정'; b1.onclick=()=>openPorterModal(docId); actions.appendChild(b1);
+      const b2=document.createElement('button'); b2.className='btn danger'; b2.textContent='취소'; b2.onclick=()=>updateDoc(doc(db,'transports',docId),{status:'canceled',updatedAt:serverTimestamp()}).then(loadTransportBoard); actions.appendChild(b2);
+      cQ++;
+    }else if(x.status==='assigned'){
+      const b1=document.createElement('button'); b1.className='btn primary'; b1.textContent='픽업 시작'; b1.onclick=()=>updateDoc(doc(db,'transports',docId),{status:'pickup',updatedAt:serverTimestamp()}).then(loadTransportBoard);
+      actions.appendChild(b1);
+      cA++;
+    }else if(x.status==='pickup'){
+      const b1=document.createElement('button'); b1.className='btn primary'; b1.textContent='출발'; b1.onclick=()=>updateDoc(doc(db,'transports',docId),{status:'enroute',updatedAt:serverTimestamp()}).then(loadTransportBoard);
+      actions.appendChild(b1);
+      cP++;
+    }else if(x.status==='enroute'){
+      const b1=document.createElement('button'); b1.className='btn primary'; b1.textContent='완료'; b1.onclick=()=>updateDoc(doc(db,'transports',docId),{status:'done',doneAt:serverTimestamp(),updatedAt:serverTimestamp()}).then(loadTransportBoard);
+      actions.appendChild(b1);
+      cP++;
+    }else if(x.status==='done'){
+      const doneAt=x.doneAt?.toDate?.()||null;
+      if(doneAt && doneAt>=today0 && doneAt<=today1) cD++;
+    }
+    whereEl.appendChild(el);
+  };
+
+  qSnap.forEach(d=>addCard(colQ,d.id,d.data()));
+  aSnap.forEach(d=>addCard(colA,d.id,d.data()));
+  p1Snap.forEach(d=>addCard(colP,d.id,d.data()));
+  p2Snap.forEach(d=>addCard(colP,d.id,d.data()));
+  dSnap.forEach(d=>addCard(colD,d.id,d.data()));
+
+  if(!colQ.children.length) colQ.innerHTML='<div class="slot">대기 없음</div>';
+  if(!colA.children.length) colA.innerHTML='<div class="slot">배정 없음</div>';
+  if(!colP.children.length) colP.innerHTML='<div class="slot">진행중 없음</div>';
+  if(!colD.children.length) colD.innerHTML='<div class="slot">완료 없음</div>';
+
+  kpiQ.textContent=cQ; kpiA.textContent=cA; kpiP.textContent=cP; kpiD.textContent=cD;
+  tpTotal.textContent = `${total}건`;
+}
+
+// 이송 저장
+tpSave.onclick = async ()=>{
+  const pid=$('tp-pid').value.trim();
+  const pname=$('tp-pname').value.trim();
+  const from=$('tp-from').value.trim();
+  const to=$('tp-to').value.trim();
+  const pri=$('tp-pri').value;
+  const type=$('tp-type').value;
+  const sched=$('tp-sched').value? new Date($('tp-sched').value) : null;
+  const notes=$('tp-notes').value.trim();
+  if(!from || !to){ alert('출발지/도착지를 입력하세요'); return; }
+  try{
+    function normPriority(v){ return (v==='긴급'||v==='STAT')?'STAT':'Routine'; }
+    function normType(v){ if(v==='휠체어'||v==='wheelchair') return 'wheelchair'; if(v==='격리'||v==='isolation') return 'isolation'; return 'bed'; }
+    await addDoc(collection(db,'transports'),{
+      createdAt: serverTimestamp(),
+      status:'queued',
+      from, to, priority: normPriority(pri), type: normType(type),
+      scheduledAt: sched? sched : null,
+      notes: notes || null,
+      patient: { id: pid||'', name: pname||'' }
+    });
+    tpCancel.click();
+    ['tp-pid','tp-pname','tp-from','tp-to','tp-notes','tp-sched'].forEach(id=>$(id).value='');
+    $('tp-pri').value='Routine'; $('tp-type').value='bed';
+    await loadTransportBoard();
+  }catch(e){ err(e); }
+};
+
+/* ===== 포터 목록 모달 ===== */
+let PICK_TARGET_REQID = null;
+let PORTERS = [];
+let PRESENCE = {};
+let serverNow = Date.now();
+const FRESH_MS=120000;
+
+const porterUI = {
+  root: $('porterPicker'),
+  list: $('porterList'),
+  q: $('porterQuery'),
+  btnCancel: $('porterCancel'),
+};
+onValue(ref(rtdb,'.info/serverTimeOffset'), s=>{ serverNow = Date.now() + (s.val()||0); });
+onValue(ref(rtdb,'presence/global'), snap=>{ PRESENCE=snap.val()||{}; if(porterUI.root.style.display==='flex') renderPorterList(); });
+
+async function loadPorters(){
+  const ps = await getDocs(collection(db,'porters'));
+  const items=[];
+  for(const d of ps.docs){
+    const uid=d.id;
+    let name='(이름없음)';
+    try{ const us=await getDoc(doc(db,'users',uid)); if(us.exists()) name=us.data()?.nickname||name; }catch{}
+    const pv=PRESENCE?.[uid];
+    const online=!!(pv && Number.isFinite(pv.at) && (serverNow - pv.at) < FRESH_MS);
+    items.push({uid,name,online});
+  }
+  items.sort((a,b)=> (b.online - a.online) || a.name.localeCompare(b.name,'ko'));
+  PORTERS=items;
+}
+function renderPorterList(){
+  const q=(porterUI.q.value||'').trim().toLowerCase();
+  const rows=PORTERS.filter(p=> !q || p.name.toLowerCase().includes(q) || p.uid.toLowerCase().includes(q));
+  porterUI.list.innerHTML='';
+  if(!rows.length){ porterUI.list.innerHTML='<div class="empty">결과가 없습니다.</div>'; return; }
+  rows.forEach(p=>{
+    const el=document.createElement('div'); el.className='porter-item';
+    el.innerHTML=`
+      <div class="porter-meta">
+        <span class="porter-dot ${p.online?'on':'off'}"></span>
+        <strong>${esc(p.name)}</strong>
+        <span class="badge" title="UID">${esc(p.uid)}</span>
+      </div>
+      <div><button class="btn primary" data-pick="${p.uid}">배정</button></div>
+    `;
+    el.querySelector('[data-pick]').onclick=()=>assignToPorter(PICK_TARGET_REQID,p);
+    porterUI.list.appendChild(el);
+  });
+}
+function openPorterModal(reqId){
+  PICK_TARGET_REQID=reqId;
+  porterUI.root.style.display='flex'; porterUI.root.setAttribute('aria-hidden','false');
+  porterUI.q.value=''; porterUI.list.innerHTML='<div class="empty">목록 불러오는 중…</div>';
+  loadPorters().then(renderPorterList);
+}
+function closePorterModal(){ porterUI.root.style.display='none'; porterUI.root.setAttribute('aria-hidden','true'); PICK_TARGET_REQID=null; }
+porterUI.btnCancel.onclick=closePorterModal;
+porterUI.root.addEventListener('click',e=>{ if(e.target===porterUI.root) closePorterModal(); });
+porterUI.q.addEventListener('input',renderPorterList);
+
+async function assignToPorter(reqId, porter){
+  if(!reqId) return;
+  try{
+    await updateDoc(doc(db,'transports',reqId),{
+      assignedTo: { uid: porter.uid, name: porter.name },
+      status:'assigned',
+      updatedAt: serverTimestamp()
+    });
+    closePorterModal();
+    await loadTransportBoard();
+    alert(`배정 완료: ${porter.name}`);
+  }catch(e){ err(e); }
+}
+
+/* ===== 탭 스위치 ===== */
+[['tab-home','panel-home'],['tab-transport','panel-transport'],['tab-posts','panel-posts'],['tab-chat','panel-chat'],['tab-comments','panel-comments'],['tab-users','panel-users'],['tab-admin','panel-admin']]
   .forEach(([tid,pid])=>{
     const t=$(tid), p=$(pid); if(!t) return;
     t.onclick=()=>{
       document.querySelectorAll('.tab').forEach(btn=>btn.classList.remove('active'));
       document.querySelectorAll('#admin-app section.card').forEach(sec=>sec.style.display='none');
       t.classList.add('active'); p.style.display='block';
+      if(pid==='panel-transport') loadTransportBoard();
     };
   });
 </script>
