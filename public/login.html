@@ -1,0 +1,88 @@
+<!doctype html> 
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="icon" href="data:,">
+<title>로그인</title>
+<meta http-equiv="Content-Security-Policy"
+  content="
+    default-src 'self';
+    script-src 'self' https://www.gstatic.com https://www.googleapis.com 'unsafe-inline' 'unsafe-eval';
+    style-src   'self' 'unsafe-inline';
+    img-src     'self' data:;
+    connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseapp.com;
+    font-src    'self' data:;
+    object-src  'none';
+    base-uri    'none';
+    form-action 'self';
+    frame-ancestors 'none';
+    upgrade-insecure-requests">
+<meta http-equiv="Referrer-Policy" content="no-referrer">
+<meta http-equiv="Permissions-Policy"
+  content="geolocation=(), camera=(), microphone=(), payment=(), usb=(), bluetooth=(), interest-cohort=()">
+<style>
+:root{--bg:#f6f7fb;--ink:#0f1724;--muted:#6b7280;--accent:#6d28d9}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif;color:var(--ink)}
+.wrap{max-width:520px;margin:40px auto;padding:16px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,.06);padding:18px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{flex:1;padding:10px 12px;border-radius:10px;text-align:center;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+.tab.active{background:var(--accent);color:#fff;border-color:transparent}
+.row{display:flex;gap:8px;align-items:center}
+.field{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;margin-top:10px}
+.btn{padding:12px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;margin-top:12px;cursor:pointer}
+.btn.small{padding:10px 12px;margin-top:0}
+.btn[disabled]{opacity:.6;cursor:not-allowed}
+.muted{color:var(--muted);font-size:13px;margin-top:8px}
+.topnav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.link{padding:8px 12px;border:1px solid #e5e7eb;border-radius:10px;text-decoration:none;color:#111;background:#fff}
+.notice{margin-top:12px;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;padding:10px;font-size:13px}
+@media (max-width:768px){ .wrap{padding:12px} .card{padding:12px} .field{font-size:16px} .btn{padding:10px 12px;font-size:14px} }
+body{padding-bottom:env(safe-area-inset-bottom);-webkit-text-size-adjust:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topnav">
+    <strong>Woori</strong>
+    <div style="display:flex;gap:8px"></div>
+  </div>
+
+  <div class="card">
+    <div class="tabs" role="tablist">
+      <button id="tab-login"  class="tab active" role="tab" aria-selected="true">로그인</button>
+      <button id="tab-signup" class="tab" role="tab" aria-selected="false">회원가입</button>
+    </div>
+
+    <!-- 로그인 -->
+    <div id="panel-login">
+      <input id="login-nick" class="field" placeholder="별명(닉네임)" inputmode="latin" autocapitalize="none" autocomplete="username"/>
+      <input id="login-pw"   class="field" type="password" placeholder="비밀번호(6자 이상)" autocomplete="current-password" minlength="6"/>
+      <button id="do-login"  class="btn">로그인</button>
+      <div class="muted">이 서비스는 이메일 없이 <b>별명+비밀번호</b>로 로그인합니다.</div>
+    </div>
+
+    <!-- 회원가입 -->
+    <div id="panel-signup" style="display:none">
+      <div class="row" style="gap:8px">
+        <input id="sign-nick" class="field" placeholder="별명(닉네임)" inputmode="latin" autocapitalize="none" autocomplete="username"/>
+        <button id="btn-check" class="btn small" type="button">중복 확인</button>
+      </div>
+      <input id="sign-pw"  class="field" type="password" placeholder="비밀번호(6자 이상)" autocomplete="new-password" minlength="6"/>
+      <input id="sign-pw2" class="field" type="password" placeholder="비밀번호 확인" autocomplete="new-password" minlength="6"/>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px">
+        <input id="agree" type="checkbox" />
+        <span>(필수) 개인정보 수집·이용에 동의합니다.<br/><span class="muted">서비스 제공 및 계정 관리 목적으로 닉네임을 수집·이용합니다.</span></span>
+      </label>
+      <button id="do-signup" class="btn">회원가입</button>
+      <div class="muted">가입 후 즉시 서비스를 이용할 수 있어요.</div>
+      <div class="notice">🔴 <b>주의:</b> 비밀번호 찾기/복구 기능이 없습니다. 꼭 기억해 주세요.</div>
+    </div>
+  </div>
+</div>
+<script type="module" src="/js/login.js"></script>
+
+</body>
+</html>

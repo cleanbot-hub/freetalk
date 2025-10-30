@@ -1,0 +1,306 @@
+<!doctype html> 
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>대시보드</title>
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#0b1020;--panel:#121831;--ink:#e5e7eb;--muted:#9aa3b2;
+  --accent:#7c3aed;--accent2:#8b5cf6;--danger:#ef4444;
+  --ok:#10b981;--warn:#f59e0b;--bd:#1f2745;--radius:14px;--max:1280px;
+}
+
+/* ── 기본 ───────────────────────────────────────────── */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:linear-gradient(180deg,#0b1020,#0f1530);
+  color:var(--ink);
+  font:15px/1.6 system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial;
+}
+a{color:inherit}
+
+/* 페이지 래퍼 */
+.wrap{
+  max-width:var(--max);
+  margin:16px auto;
+  padding:0 16px;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* 상단바 */
+.topbar{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:14px}
+.brand{display:flex;gap:10px;align-items:center}
+.badge{padding:4px 10px;border:1px solid var(--bd);border-radius:999px;color:var(--muted);font-size:12px;background:#101734}
+.pill{padding:4px 10px;border-radius:999px;border:1px solid var(--bd);background:#0e1530}
+
+/* 레이아웃: 기본 1열 → 980px 이상 2열 → 1200px 이상 3열 */
+.grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  flex:1;
+  min-height:0;
+}
+@media (min-width:980px){
+  .grid{grid-template-columns:1fr 360px}
+}
+@media (min-width:1200px){
+  .grid{grid-template-columns:1.2fr 0.9fr 0.9fr}
+}
+
+/* 패널 */
+.panel{
+  background:linear-gradient(180deg,#121831,#0f142d);
+  border:1px solid var(--bd);
+  border-radius:var(--radius);
+  padding:14px;
+  box-shadow:0 10px 24px rgba(0,0,0,.25);
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+.panel h2{margin:0 0 8px;font-size:16px}
+
+/* 목록 스크롤 */
+.list{
+  display:flex;flex-direction:column;gap:10px;margin-top:8px;flex:1;min-height:0;overflow:auto;
+}
+
+/* sticky aside */
+@media (min-width:980px){
+  aside.panel{position:sticky;top:14px;align-self:start;max-height:calc(100vh - 28px - 14px);overflow:auto}
+}
+
+/* 캔버스 높이 */
+canvas{height:auto !important;max-height:280px}
+
+/* 기타 스타일 */
+.k,.hint{color:var(--muted);font-size:12px}
+.row{display:flex;gap:10px;align-items:center}
+.space{justify-content:space-between}
+.btn{padding:8px 12px;border-radius:10px;background:#1a2142;border:1px solid var(--bd);color:var(--ink);cursor:pointer}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.primary{background:linear-gradient(180deg,var(--accent2),var(--accent));border-color:#6d28d9}
+.btn.danger{background:#2b1117;border-color:#3a1a25;color:#fecaca}
+.field{border:1px solid var(--bd);background:#0e1530;color:var(--ink);border-radius:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.stat{border:1px solid var(--bd);border-radius:12px;padding:10px;background:#0e1530;display:flex;justify-content:space-between;align-items:center}
+.stat b{font-size:18px}
+
+.task{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border:1px dashed var(--bd);border-radius:12px;padding:12px;background:#0f1736}
+.left{display:flex;flex-direction:column;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--bd);color:#9aa3b2;background:#0b1230}
+.chip.warn{color:#fffbeb;border-color:#7c2d12;background:#3b1d0f}
+.chip.stat-open{border-color:#334155;color:#cbd5e1}
+.chip.stat-prog{border-color:#1d4ed8;color:#bfdbfe}
+.chip.stat-done{border-color:#16a34a;color:#bbf7d0}
+.right{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.tabs button{padding:8px 12px;border-radius:10px;border:1px solid var(--bd);background:#0b1230;color:#e5e7eb;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:#1a2142}
+
+/* 메모 툴팁 */
+.tip-wrap{position:relative;display:inline-flex;align-items:center}
+.tip{cursor:help}
+.tip-wrap .tip-box{
+  position:absolute;left:0;bottom:calc(100% + 8px);
+  min-width:240px;max-width:360px;padding:10px 12px;border-radius:10px;
+  background:#0c1433;border:1px solid #253056;color:#cbd5e1;
+  box-shadow:0 10px 24px rgba(0,0,0,.35);
+  font-size:13px;line-height:1.5;white-space:pre-wrap;
+  opacity:0;transform:translateY(6px);pointer-events:none;transition:.16s ease;z-index:30;
+}
+.tip-wrap:hover .tip-box{opacity:1;transform:translateY(0);pointer-events:auto}
+.tip-box .tip-title{display:flex;align-items:center;gap:6px;margin-bottom:6px;color:#9aa3b2;font-size:12px}
+
+/* Toast */
+#toasts{position:fixed;right:16px;bottom:16px;z-index:300;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{pointer-events:auto;min-width:260px;max-width:360px;border-radius:12px;padding:12px 14px;
+  display:flex;gap:10px;align-items:center;color:#e5e7eb;opacity:0;transform:translateY(10px);
+  animation:toast-in .25s ease-out forwards;box-shadow:0 10px 30px rgba(0,0,0,.35);border-left:5px solid;}
+.toast .icon{font-size:18px;line-height:1.2}
+.toast.info{background:#1a2142;border-left-color:#8b5cf6}
+.toast.success{background:#0f2b1f;border-left-color:#10b981}
+.toast.warn{background:#3b250f;border-left-color:#f59e0b}
+.toast.error{background:#3a1313;border-left-color:#ef4444}
+.toast .msg{flex:1;font-size:14px;line-height:1.4}
+.toast .t-close{background:transparent;border:0;color:#9aa3b2;cursor:pointer;font-size:16px}
+
+/* 수술 리스트 */
+.s-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.s-item{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;
+  border:1px dashed var(--bd);border-radius:10px;padding:8px;background:#0e1530}
+.s-item b{font-weight:600}
+
+/* Mobile */
+@media (max-width:820px){
+  .right{align-items:flex-start}
+  .tip-wrap .tip-box{left:auto;right:0}
+}
+
+/* === Chat Drawer on Dashboard === */
+/* ==== Chat FAB ==== */
+.chat-fab {
+  position: fixed; right: 18px; bottom: 18px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--accent2), var(--accent));
+  border: 1px solid #6d28d9; box-shadow: 0 10px 22px rgba(0,0,0,.35);
+  display: grid; place-items: center; cursor: pointer; z-index: 60;
+}
+.chat-fab svg { pointer-events: none }
+.chat-fab .badge {
+  position: absolute; top: -6px; right: -6px;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  background:#ef4444; color:#fff; border:0; border-radius: 999px;
+  font-size:12px; line-height:20px; text-align:center; display:none;
+  box-shadow: 0 6px 12px rgba(239,68,68,.35);
+}
+.chat-dim{ position:fixed; inset:0; background:rgba(8,10,18,.45); backdrop-filter:blur(2px); z-index:1999; display:none; }
+.chat-drawer{
+  position:fixed; top:0; right:0; height:100dvh; width:min(720px,95vw);
+  background:#0e1328; border-left:1px solid var(--bd);
+  box-shadow:-14px 0 40px rgba(0,0,0,.35); transform:translateX(100%);
+  transition:transform .26s ease; z-index:2001; display:flex; flex-direction:column;
+}
+.chat-drawer.open{ transform:translateX(0) }
+.chat-head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:10px 12px; border-bottom:1px solid var(--bd); background:linear-gradient(180deg,#121831,#0f142d)
+}
+.chat-iframe{ border:0; width:100%; flex:1; background:#111421 }
+.chat-close{ padding:8px 10px; border-radius:8px; border:1px solid var(--bd); background:#1a2142; color:#fff; cursor:pointer }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4.5v9L12 21 4 16.5v-9L12 3z" stroke="#8b5cf6" stroke-width="1.4"/></svg>
+      <div>
+        <div style="font-weight:700">대시보드</div>
+        <div class="k">날짜별 실시간 업무 현황</div>
+      </div>
+    </div>
+    <div class="row">
+      <span id="clock" class="badge">--:--</span>
+      <span id="me" class="badge">로그인 확인 중…</span>
+      <button id="go-woori" class="btn">업무등록</button>
+      <button id="go-posting" class="btn">게시판</button>
+      <!-- 채팅 토글 + 미읽음 배지 (상단) -->
+      <button id="btn-chat" class="btn" style="position:relative">
+        채팅
+        <span id="chat-badge" style="position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 6px;border-radius:999px;background:#ef4444;color:#fff;font-size:12px;line-height:18px;text-align:center;display:none;">0</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- ① 업무 목록 -->
+    <section class="panel" id="tasks-panel">
+      <div class="row space" style="flex-wrap:wrap;gap:8px">
+        <h2>현황</h2>
+        <div class="row" style="gap:6px">
+          <button id="prev-day" class="btn small">←</button>
+          <input id="day" type="date" class="field" style="width:auto;padding:6px 10px">
+          <button id="next-day" class="btn small">→</button>
+        </div>
+        <div class="tabs">
+          <button class="tab" data-state="all" aria-pressed="true">전체</button>
+          <button class="tab" data-state="open">대기</button>
+          <button class="tab" data-state="in_progress">진행중</button>
+          <button class="tab" data-state="done">완료</button>
+        </div>
+      </div>
+      <div id="list" class="list"></div>
+    </section>
+
+    <!-- ② 요약 -->
+    <aside class="panel" id="summary-panel">
+      <h2>요약 (이송·기타)</h2>
+      <div class="stats">
+        <div class="stat"><div>대기</div><b id="cnt-open">0</b></div>
+        <div class="stat"><div>진행중</div><b id="cnt-prog">0</b></div>
+        <div class="stat"><div>완료</div><b id="cnt-done">0</b></div>
+      </div>
+      <canvas id="statusChart" style="margin-top:16px"></canvas>
+
+      <div style="margin-top:14px">
+        <div class="k">처리시간 (현재 필터 기준)</div>
+        <div class="stats" style="grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px">
+          <div class="stat"><div>평균</div><b id="avg-time">-</b></div>
+          <div class="stat"><div>최장</div><b id="max-time">-</b></div>
+        </div>
+        <div id="max-time-desc" class="k" style="margin-top:6px">완료된 업무 기준으로 집계됩니다.</div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="k">필터</div>
+        <div class="filters" style="margin-top:6px">
+          <label class="pill"><input id="trans-only" type="checkbox"> 이송</label>
+          <label class="pill"><input id="misc-only"  type="checkbox"> 기타</label>
+          <label class="pill"><input id="sound-toggle" type="checkbox" checked> 사운드</label>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;border-top:1px solid var(--bd);padding-top:12px">
+        <div class="row space"><h2 style="margin:0">시간대별 이송량</h2><span class="k">createdAt 기준</span></div>
+        <canvas id="hourlyChart" style="margin-top:10px"></canvas>
+      </div>
+    </aside>
+
+    <!-- ③ 수술 -->
+    <aside class="panel" id="surgery-panel">
+      <div class="row space">
+        <h2>수술 현황</h2>
+        <span class="k">오늘(선택 날짜) 기준 · <span id="surg-updated">--:--</span></span>
+      </div>
+      <div class="stats">
+        <div class="stat"><div>수술대기</div><b id="op-wait">0건</b></div>
+        <div class="stat"><div>수술진행중</div><b id="op-prog">0건</b></div>
+        <div class="stat"><div>완료</div><b id="op-done">0건</b></div>
+      </div>
+      <canvas id="surgeryChart" style="margin-top:12px"></canvas>
+
+      <div class="k" style="margin-top:10px">최근 수술 5건</div>
+      <div id="surg-list" class="s-list"><div class="k">불러오는 중…</div></div>
+    </aside>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toasts"></div>
+
+<!-- Chat Drawer -->
+<div id="chat-dim" class="chat-dim" aria-hidden="true"></div>
+<aside id="chat-drawer" class="chat-drawer" aria-hidden="true" role="dialog" aria-label="실시간 채팅">
+  <div class="chat-head">
+    <strong>실시간 채팅</strong>
+    <div class="row">
+      <button id="chat-popout" class="btn small">새 창</button>
+      <button id="chat-close" class="chat-close">닫기(ESC)</button>
+    </div>
+  </div>
+  <iframe id="chat-frame" class="chat-iframe" title="Freetalk Chat" loading="lazy"></iframe>
+</aside>
+<button id="chat-fab" class="chat-fab" aria-label="채팅 열기" title="채팅 열기" style="position:fixed;right:18px;bottom:18px">
+  <span id="chat-fab-badge" class="badge">0</span>
+  <!-- 말풍선 아이콘 -->
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M5 19l2.5-2H18a3 3 0 003-3V7a3 3 0 00-3-3H6a3 3 0 00-3 3v7a3 3 0 003 3v2z" stroke="white" stroke-width="1.6"/>
+  </svg>
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="/js/woori-dashboard.js"></script>
+<!-- chat.html에도 아래 신호를 넣어두면 UX가 좋아집니다.
+A) 새 메시지 수신 시: window.parent?.postMessage({ type:'chat:new', room:(roomId||'global'), ts:Date.now() }, location.origin);
+B) 읽음 처리 시(창 열림/스크롤 끝 등): window.parent?.postMessage({ type:'chat:read', room:(roomId||'global') }, location.origin);
+-->
+</body>
+</html>

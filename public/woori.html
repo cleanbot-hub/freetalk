@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" href="data:,">
+  <title>업무 등록</title>
+  <style>
+    :root{--bg:#0b1020;--panel:#121831;--ink:#e5e7eb;--muted:#9aa3b2;--accent:#7c3aed;--accent-2:#8b5cf6;--danger:#ef4444;--bd:#1f2745;--radius:14px;--max:980px}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b1020,#0f1530);color:var(--ink);font:15px/1.6 system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial}
+    a{color:inherit}
+    .wrap{max-width:var(--max);margin:24px auto;padding:0 16px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .badge{padding:2px 8px;border:1px solid var(--bd);border-radius:999px;color:var(--muted);font-size:12px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .panel{background:linear-gradient(180deg,#121831,#0f142d);border:1px solid var(--bd);border-radius:var(--radius);padding:14px;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+    .panel h2{margin:0 0 6px;font-size:16px}
+    .hint{color:var(--muted);font-size:12px}
+    .row{display:flex;gap:10px;align-items:center}
+    .field{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:#0e1530;color:var(--ink);outline:none}
+    .field::placeholder{color:#6b7280}
+    .select{appearance:none}
+    .btn{padding:10px 14px;border-radius:10px;background:#1a2142;border:1px solid var(--bd);color:var(--ink);cursor:pointer}
+    .btn:hover{filter:brightness(1.05)}
+    .btn.primary{background:linear-gradient(180deg,var(--accent-2),var(--accent));border-color:#6d28d9}
+    .btn.ghost{background:transparent;border-color:var(--bd)}
+    .btn.small{padding:6px 10px;font-size:13px}
+    .btn.danger{background:#24121a;border-color:#3a1a25;color:#fecaca}
+    .stack{display:flex;flex-direction:column;gap:10px}
+    .k{font-size:12px;color:var(--muted)}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .task{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border:1px dashed var(--bd);border-radius:12px;padding:12px}
+    .task b{font-weight:600}
+    .chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--bd);background:#0b1230;color:#cbd5e1}
+    .chip.stat-open{border-color:#334155}
+    .chip.stat-prog{border-color:#1d4ed8;color:#bfdbfe}
+    .chip.stat-done{border-color:#16a34a;color:#bbf7d0}
+    .chip.warn{border-color:#7c2d12;color:#ffedd5}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);background:#0b1230;border-radius:999px;padding:4px 10px;font-size:12px;color:#cbd5e1}
+    .s-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .s-item{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;border:1px dashed var(--bd);border-radius:10px;padding:8px;background:#0e1530}
+    .s-item b{font-weight:600}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(8,10,18,.6);backdrop-filter:blur(4px);z-index:20}
+    .modal .panel{width:min(680px,100%)}
+
+    /* === Chat Drawer (추가) === */
+    .chat-fab{
+      position:fixed; right:16px; bottom:16px; z-index:2000;
+      width:52px; height:52px; border-radius:999px;
+      background:linear-gradient(180deg,var(--accent-2),var(--accent));
+      border:1px solid #6d28d9; color:#fff; font-weight:700; cursor:pointer;
+      box-shadow:0 12px 28px rgba(0,0,0,.28); display:flex; align-items:center; justify-content:center;
+    }
+    .chat-fab:hover{ filter:brightness(1.06) }
+    .chat-dim{
+      position:fixed; inset:0; background:rgba(8,10,18,.45); backdrop-filter:blur(2px);
+      z-index:1999; display:none;
+    }
+    .chat-drawer{
+      position:fixed; top:0; right:0; height:100dvh; width:min(720px,95vw);
+      background:#0e1328; border-left:1px solid var(--bd);
+      box-shadow: -14px 0 40px rgba(0,0,0,.35);
+      transform:translateX(100%); transition:transform .26s ease; z-index:2001;
+      display:flex; flex-direction:column;
+    }
+    .chat-drawer.open{ transform:translateX(0) }
+    .chat-head{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 12px; border-bottom:1px solid var(--bd); background:linear-gradient(180deg,#121831,#0f142d)
+    }
+    .chat-iframe{ border:0; width:100%; flex:1; background:#111421 }
+    .chat-close{ padding:8px 10px; border-radius:8px; border:1px solid var(--bd); background:#1a2142; color:#fff; cursor:pointer }
+
+    @media (max-width: 820px){
+      .wrap{margin:16px auto;padding:8px}
+      .topbar{flex-wrap:wrap;gap:8px}
+      .topbar .row{flex-wrap:wrap;gap:6px}
+      .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
+      .panel{padding:12px;border-radius:12px}
+      .row{flex-wrap:wrap}
+      .field{font-size:16px}
+      .btn{padding:10px 12px}
+      .task{flex-direction:column;align-items:stretch}
+      .task>div:last-child{text-align:left;margin-top:6px}
+      .chips{gap:4px}
+      .chip{font-size:11px;padding:2px 7px}
+      .k{font-size:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21 4 16.5v-9L12 3z" stroke="#8b5cf6" stroke-width="1.4"/></svg>
+        <div>
+          <div style="font-weight:700">업무 등록</div>
+          <div class="hint">이송업무는 목적지만 입력하면 <b>본인 자동 배정</b>됩니다.</div>
+        </div>
+      </div>
+      <div class="row">
+        <span id="me-pill" class="badge">로그인 확인 중…</span>
+        <button id="btn-dashboard" class="btn">대시보드</button>
+        <!-- 채팅 버튼 (추가) -->
+        <!-- <button id="btn-chat" class="btn">채팅</button> -->
+        <button id="btn-logout" class="btn ghost">로그아웃</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- 이송업무 등록 -->
+      <section class="panel">
+        <h2>이송업무 등록</h2>
+        <p class="hint">목적지/부서만 입력하세요. (병실/성명 입력 없음)</p>
+        <div class="stack" style="margin-top:8px">
+          <input id="t-dept" class="field" placeholder="목적지/부서 (예: 9층 영상의학과)">
+          <div class="row">
+            <select id="t-mob" class="field select" title="이동수단">
+              <option value="bed">이동침대</option>
+              <option value="wheelchair">휠체어</option>
+              <option value="walk">도보</option>
+            </select>
+            <select id="t-pri" class="field select" title="우선도">
+              <option value="Routine">보통</option>
+              <option value="STAT">긴급</option>
+            </select>
+          </div>
+          <textarea id="t-note" class="field" rows="3" placeholder="메모 (선택)"></textarea>
+          <div class="row" style="justify-content:flex-end">
+            <button id="open-misc" class="btn">기타 업무</button>
+            <button id="t-save" class="btn primary">등록</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 수술 등록 -->
+      <section class="panel">
+        <h2>수술 등록</h2>
+        <p class="hint">환자 식별정보 없이 수술 흐름만 기록합니다. 최초 상태는 ‘수술대기’입니다.</p>
+        <div class="stack" style="margin-top:8px">
+          <input id="s-id" class="field" placeholder="케이스 ID (자동 생성)" disabled>
+          <div class="row">
+            <select id="s-dept" class="field select" title="수술 분류">
+              <option value="NS">NS (신경외과)</option>
+              <option value="OS">OS (정형외과)</option>
+            </select>
+            <input id="s-name" class="field" placeholder="수술명 (예: 척추 고정술)" required>
+          </div>
+          <!-- ✅ required 제거, placeholder에 '선택' 명시 -->
+          <textarea id="s-note" class="field" rows="3" placeholder="메모 (선택, 개인정보 금지)"></textarea>
+          <div class="row" style="justify-content:flex-end">
+            <span class="pill">초기 상태: 수술대기</span>
+            <button id="s-save" class="btn primary">등록</button>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:10px">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="k">오늘 등록된 수술 (최근 5)</div>
+            <div class="row">
+              <span id="s-count" class="pill">0건</span>
+              <button id="s-reload" class="btn small">새로고침</button>
+            </div>
+          </div>
+          <div id="s-list" class="s-list"><div class="k">불러오는 중…</div></div>
+        </div>
+      </section>
+
+      <!-- 나의 업무 -->
+      <section class="panel" style="grid-column:1 / -1">
+        <h2>나의 업무</h2>
+        <p class="hint">오늘 등록된 본인 업무만 표시됩니다. 항목 오른쪽 버튼으로 <b>상태 전환</b>·<b>수정</b>·<b>삭제</b>가 가능합니다.</p>
+        <div id="my-list" class="list" aria-live="polite"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 기타 업무 등록 모달 -->
+  <div id="misc-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="misc-title">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <strong id="misc-title">기타 업무 등록</strong>
+        <div class="row">
+          <button id="misc-cancel" class="btn">취소</button>
+          <button id="misc-save" class="btn primary">저장</button>
+        </div>
+      </div>
+      <div class="stack" style="margin-top:8px">
+        <input id="m-title" class="field" placeholder="업무 제목 (예: 물품 전달, 서류 접수)">
+        <input id="m-dept"  class="field" placeholder="관련 부서/장소 (선택)">
+        <select id="m-pri" class="field select">
+          <option value="Routine">보통</option>
+          <option value="STAT">긴급</option>
+        </select>
+        <textarea id="m-note" class="field" rows="4" placeholder="상세 메모(선택)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 업무 수정 모달 -->
+  <div id="edit-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <strong id="edit-title">업무 수정</strong>
+        <div class="row">
+          <button id="edit-cancel" class="btn">닫기</button>
+          <button id="edit-save" class="btn primary">저장</button>
+        </div>
+      </div>
+      <div class="stack" style="margin-top:8px">
+        <div class="row">
+          <select id="e-status" class="field select" title="상태">
+            <option value="open">열림</option>
+            <option value="in_progress">진행중</option>
+            <option value="done">완료</option>
+          </select>
+          <select id="e-pri" class="field select" title="우선도">
+            <option value="Routine">보통</option>
+            <option value="STAT">긴급</option>
+          </select>
+        </div>
+        <textarea id="e-note" class="field" rows="3" placeholder="메모"></textarea>
+      </div>
+      <div id="edit-transport" class="stack" style="margin-top:10px;display:none">
+        <div class="k">이송 필드</div>
+        <div class="row">
+          <input id="e-room" class="field" placeholder="병실/호수">
+          <input id="e-patient" class="field" placeholder="환자 성명">
+        </div>
+        <input id="e-dept" class="field" placeholder="목적지/부서">
+        <select id="e-mob" class="field select">
+          <option value="bed">이동침대</option>
+          <option value="wheelchair">휠체어</option>
+          <option value="walk">도보</option>
+        </select>
+      </div>
+      <div id="edit-misc" class="stack" style="margin-top:10px;display:none">
+        <div class="k">기타 필드</div>
+        <input id="e-title" class="field" placeholder="업무 제목">
+        <input id="e-dept-misc" class="field" placeholder="관련 부서/장소">
+      </div>
+    </div>
+  </div>
+
+  <!-- 수술 편집 모달 -->
+  <div id="s-edit-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="s-edit-title">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <strong id="s-edit-title">수술 편집</strong>
+        <div class="row">
+          <button id="s-edit-cancel" class="btn">닫기</button>
+          <button id="s-edit-save" class="btn primary">저장</button>
+        </div>
+      </div>
+      <div class="stack" style="margin-top:8px">
+        <input id="se-id" class="field" disabled>
+        <div class="row">
+          <select id="se-dept" class="field select">
+            <option value="NS">NS (신경외과)</option>
+            <option value="OS">OS (정형외과)</option>
+          </select>
+          <input id="se-name" class="field" placeholder="수술명">
+        </div>
+        <textarea id="se-note" class="field" rows="3" placeholder="메모 (개인정보 금지)"></textarea>
+        <div class="row">
+          <select id="se-status" class="field select" title="상태">
+            <option value="waiting">수술대기</option>
+            <option value="operating">수술진행중</option>
+            <option value="done">완료</option>
+          </select>
+          <span class="k">상태 변경 시 타임스탬프 자동 기록</span>
+        </div>
+        <div id="se-times" class="k" style="margin-top:6px;line-height:1.7"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔽 Chat Drawer (chat.html 연동) -->
+  <div id="chat-dim" class="chat-dim" aria-hidden="true"></div>
+  <aside id="chat-drawer" class="chat-drawer" aria-hidden="true" role="dialog" aria-label="실시간 채팅">
+    <div class="chat-head">
+      <strong>실시간 채팅</strong>
+      <div class="row">
+        <!-- <button id="chat-popout" class="btn small">새 창</button> -->
+        <button id="chat-close" class="chat-close">닫기(ESC)</button>
+      </div>
+    </div>
+    <iframe id="chat-frame" class="chat-iframe" title="Freetalk Chat" loading="lazy"></iframe>
+  </aside>
+  <button id="chat-fab" class="chat-fab" aria-label="채팅 열기">💬</button>
+  <!-- 🔼 Chat Drawer -->
+
+<script type="module" src="/js/woori.js"></script>
+</body>
+</html>

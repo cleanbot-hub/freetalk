@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="icon" href="data:,">
+<title>채팅</title>
+<style>
+:root{
+  --bg:#f6f7fb; --ink:#0f1724; --muted:#6b7280; --border:#e5e7eb;
+  --accent:#6d28d9; --accent-2:#7c3aed; --danger:#ef4444;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif;
+  padding-bottom:env(safe-area-inset-bottom);-webkit-text-size-adjust:100%;
+}
+
+/* ── Top bar ─────────────────────────────────────────── */
+.top{max-width:1080px;margin:12px auto;padding:0 12px;
+  display:flex;gap:8px;align-items:center;justify-content:space-between}
+.menu{display:flex;gap:8px}
+.link{padding:8px 12px;border-radius:10px;border:1px solid var(--border);
+  background:#fff;text-decoration:none;color:var(--ink)}
+
+/* ── Outer container ─────────────────────────────────── */
+.wrap{max-width:1080px;margin:0 auto;padding:0 12px}
+
+/* ── Panel base ──────────────────────────────────────── */
+.panel{background:#fff;border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 10px 30px rgba(2,6,23,.06)}
+.header{display:flex;justify-content:space-between;align-items:center;
+  padding:12px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap}
+.header .left{display:flex;align-items:center;gap:10px}
+.header .right{display:flex;align-items:center;gap:8px}
+.section{padding:12px}
+
+/* ── Inner layout: chat + participants ───────────────── */
+.chatlayout{display:grid;grid-template-columns:1fr;gap:12px}
+.chatpanel{display:block}
+.participants{display:inline-block}
+.chatpanel.show-participants .participants{display:block}
+
+@media (min-width:980px){
+  .chatlayout{grid-template-columns:2fr 1fr}
+  .participants{display:none}
+}
+
+/* ── Chat area ───────────────────────────────────────── */
+.chat{display:flex;flex-direction:column;height:70vh;min-height:520px}
+.stream{flex:1;overflow:auto;padding:12px;border:1px solid var(--border);
+  border-radius:12px;background:#fafafa;display:flex;flex-direction:column;gap:8px}
+.stream::-webkit-scrollbar{width:8px}
+.stream::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:8px}
+
+/* ── Bubbles ─────────────────────────────────────────── */
+.bubble{display:inline-flex;flex-direction:column;gap:6px;width:fit-content;max-width:68%;
+  padding:10px 12px;border-radius:16px;line-height:1.45;word-break:break-word;white-space:pre-wrap;
+  background:#fff;border:1px solid var(--border);position:relative;-webkit-touch-callout:none}
+.bubble .name{font-size:12px;font-weight:600;color:var(--muted)}
+.bubble .text{font-size:15px}
+.bubble .time{font-size:11px;color:#9ca3af;align-self:flex-end}
+.bubble.other{align-self:flex-start;border-top-left-radius:6px}
+.bubble.mine{align-self:flex-end;border-top-right-radius:6px;box-shadow:0 6px 14px rgba(109,40,217,0.08)}
+
+/* ── Reactions ───────────────────────────────────────── */
+.reactions{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border:1px solid var(--border);
+  background:#fff;border-radius:999px;font-size:13px;cursor:pointer;touch-action:manipulation}
+.chip.me{background:#f3f0ff;border-color:#c7d2fe;font-weight:700}
+.chip .cnt{min-width:1.2em;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── Floating reaction picker ────────────────────────── */
+.picker{position:absolute;z-index:9999;display:flex;gap:6px;background:#fff;border:1px solid var(--border);
+  border-radius:12px;box-shadow:0 12px 28px rgba(2,6,23,.18);padding:6px}
+.picker button{font-size:22px;line-height:1;border:0;background:#fff;
+  padding:6px 8px;border-radius:10px;cursor:pointer;touch-action:manipulation}
+.picker button:hover{background:#f3f4f6}
+.picker::after{content:"";position:absolute;bottom:-8px;left:20px;width:0;height:0;
+  border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff;
+  filter:drop-shadow(0 1px 0 rgba(0,0,0,.08))}
+
+/* ── Input row ───────────────────────────────────────── */
+.input{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.field{flex:1;min-width:200px;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.field:focus{outline:none;border-color:#c7d2fe;box-shadow:0 0 0 4px rgba(99,102,241,.12)}
+.btn{padding:10px 14px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+.btn:hover{background:var(--accent-2)}
+.btn-mini{padding:8px 10px;border:1px solid var(--border);background:#fff;border-radius:10px;cursor:pointer}
+.btn-danger{background:#ef4444;color:#fff;border:0}
+.counter{font-size:12px;color:#6b7280}
+
+/* ── Participants list ───────────────────────────────── */
+.part-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.part-count{font-size:13px;color:var(--muted)}
+.users{border:1px solid var(--border);border-radius:10px;max-height:70vh;overflow:auto;background:#fafafa}
+.user{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #eef}
+.user:last-child{border-bottom:0}
+.dot{width:9px;height:9px;border-radius:50%;background:#22c55e;border:1px solid #16a34a}
+.name{flex:1;font-size:14px}
+.me{font-weight:700}
+
+/* ── Mobile polish ───────────────────────────────────── */
+@media (max-width:980px){
+  .chatlayout{grid-template-columns:1fr}
+  .participants{display:none}
+  .chatpanel.show-participants .participants{display:block}
+}
+
+/* ── Embed 모드(대시보드 iframe) ───────────────────── */
+html.embed .top,
+html.embed #toggle-users,
+html.embed #btn-clear,
+html.embed .participants{ display:none !important; }
+html.embed .chat{ height:62vh; min-height:420px; }
+</style>
+</head>
+<body>
+<div class="top">
+  <strong>Chat</strong>
+</div>
+
+<div class="wrap">
+  <div class="panel chatpanel" id="chatPanel">
+    <div class="header">
+      <aside class="participants" id="participants">
+        <div class="part-head"><strong>참여자</strong></div>
+        <div id="userList" class="users" aria-live="polite" aria-label="현재 채팅 참여자 목록"></div>
+      </aside>
+      <div class="left">
+        <strong id="roomTitle">채팅</strong>
+      </div>
+      <div class="right">
+        <span id="presence" class="part-count">현재 접속자 수: 0명</span>
+        <button id="toggle-users" class="btn-mini" aria-expanded="false" aria-controls="participants">참여자 ▾</button>
+        <button id="btn-clear" class="btn-mini btn-danger">채팅 초기화</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="chatlayout">
+        <!-- chat column -->
+        <div>
+          <div id="reqBannerMount"></div>
+          <div class="chat">
+            <div id="list" class="stream"></div>
+            <div class="input">
+              <input id="text" class="field" placeholder="메시지를 입력하고 Enter 또는 보내기" disabled>
+              <span id="counter" class="counter" aria-live="polite"></span>
+              <button id="send" class="btn" disabled>보내기</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* Firebase */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import {
+  getFirestore, doc, onSnapshot, serverTimestamp, collection, addDoc,
+  orderBy, query, limit, getDocs, writeBatch, getDoc, deleteDoc, setDoc, updateDoc
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import { getDatabase, ref, set as rset, update as rupdate, onValue, onDisconnect, serverTimestamp as rtdbNow } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+/* Config */
+const cfg = {
+  apiKey:"AIzaSyACn_-2BLztKYmBKXtrKNtMsC-2Y238oug",
+  authDomain:"woori-1ecf5.firebaseapp.com",
+  projectId:"woori-1ecf5",
+  storageBucket:"woori-1ecf5.firebasestorage.app",
+  messagingSenderId:"1073097361525",
+  appId:"1:1073097361525:web:3218ced6a040aaaf4d503c",
+  databaseURL:"https://woori-1ecf5-default-rtdb.firebaseio.com"
+};
+const app=initializeApp(cfg);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const rtdb=getDatabase(app);
+
+/* DOM */
+const $=id=>document.getElementById(id);
+const chatPanel=$('chatPanel');
+const list=$('list'), textEl=$('text'), sendEl=$('send'), btnClear=$('btn-clear');
+const presenceEl=$('presence'), userListEl=$('userList'), counterEl=$('counter');
+const toggleUsersBtn=$('toggle-users');
+const roomTitleEl=$('roomTitle');
+const bannerMount=$('reqBannerMount');
+
+/* URL params → room/req/embed */
+const params = new URLSearchParams(location.search);
+const ROOM_ID = params.get('room') || 'global';
+const REQ_ID  = params.get('req') || null;
+const EMBED   = params.get('embed') === '1';
+if (EMBED) document.documentElement.classList.add('embed');
+roomTitleEl.textContent = (ROOM_ID==='global') ? '채팅' : `채팅 · ${ROOM_ID}`;
+
+/* 안전한 postMessage 대상 origin 계산 (파일/샌드박스/정식 배포 모두 대응) */
+const TARGET_ORIGIN = (() => {
+  try{
+    return document.referrer ? new URL(document.referrer).origin : location.origin;
+  }catch{ return location.origin; }
+})();
+
+/* Utils */
+const fmt = ts=>{ try{ const d=ts?.toDate?.()||new Date(); return d.toLocaleString(); }catch{ return '' } };
+const esc = s=>String(s||'').replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
+const err = e=>{ console.error(e); alert('오류: '+(e.message||e.code)); };
+
+/* Reactions */
+const REACTIONS = ["☑️","👍","💪","😂","🔥"];
+
+/* 글자수 제한 */
+const MAX_LEN = 300;
+textEl.setAttribute('maxlength', String(MAX_LEN));
+let isComposing=false;
+const updateCounter=()=>{ counterEl.textContent=`${(textEl.value||'').length}/${MAX_LEN}`; };
+
+/* ── 대시보드 연동: postMessage 신호 ───────────────── */
+/* 새 메시지 도착 알림 */
+function notifyNewMessage(ts=Date.now()){
+  try { window.parent?.postMessage({ type:'chat:new', room:ROOM_ID, ts }, TARGET_ORIGIN); } catch {}
+}
+/* 읽음 처리 알림 (디바운스) */
+let _lastReadSent = 0;
+function notifyReadNow(){
+  _lastReadSent = Date.now();
+  try { window.parent?.postMessage({ type:'chat:read', room:ROOM_ID }, TARGET_ORIGIN); } catch {}
+}
+function notifyRead(){
+  const now = Date.now();
+  if (now - _lastReadSent > 300) notifyReadNow(); // 300ms 내 중복 방지
+}
+/* 유틸: 리스트 바닥 여부 */
+function isAtBottom(el){
+  if(!el) return false;
+  return (el.scrollTop + el.clientHeight) >= (el.scrollHeight - 6);
+}
+/* 읽음 트리거: 창 로드/포커스/가시성/스크롤/입력 포커스 */
+window.addEventListener('load', notifyRead);
+window.addEventListener('focus', notifyRead);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) notifyRead(); });
+list.addEventListener('scroll', ()=>{ if (isAtBottom(list)) notifyRead(); });
+textEl.addEventListener('focus', notifyRead);
+
+/* Ensure nickname */
+async function ensureNickname(u){
+  const uRef=doc(db,'users',u.uid);
+  const snap=await getDoc(uRef);
+  let nick=snap.data()?.nickname?.trim();
+  if(!nick){
+    nick=u.displayName?.trim()||(u.email?u.email.split('@')[0]:'');
+    while(!nick||nick.length<2||nick.length>20){
+      const p=(prompt('처음 오셨네요! 사용할 별명을 입력하세요 (2~20자)')||'').trim();
+      if(p===null) break;
+      nick=p;
+    }
+    if(!nick) nick='손님';
+    await setDoc(uRef,{nickname:nick},{merge:true});
+    try{await updateProfile(u,{displayName:nick});}catch{}
+  }
+  return nick;
+}
+
+/* State */
+let me=null,myNick='사용자',myPresenceRef=null;
+let stopMsgs=null;
+let reactUnsubs = new Map();
+let currentPicker=null;
+
+/* server time offset */
+let serverNow = Date.now();
+onValue(ref(rtdb, '.info/serverTimeOffset'), (s) => {
+  const off = s.val() || 0;
+  serverNow = Date.now() + off;
+});
+
+/* Participants toggle helpers */
+function setParticipantsVisible(v){
+  if(v){
+    chatPanel.classList.add('show-participants');
+    toggleUsersBtn.textContent='참여자 ▴';
+    toggleUsersBtn.setAttribute('aria-expanded','true');
+  }else{
+    chatPanel.classList.remove('show-participants');
+    toggleUsersBtn.textContent='참여자 ▾';
+    toggleUsersBtn.setAttribute('aria-expanded','false');
+  }
+}
+const preferCollapsed = window.matchMedia('(max-width: 980px)').matches;
+setParticipantsVisible(!preferCollapsed);
+toggleUsersBtn.onclick = () => setParticipantsVisible(!chatPanel.classList.contains('show-participants'));
+
+/* Auth & boot */
+onAuthStateChanged(auth,async(u)=>{
+  if(!u) return location.replace('login.html');
+  me=u;
+  myNick=await ensureNickname(u);
+
+  // Presence 등록 + 하트비트
+  myPresenceRef = ref(rtdb, `presence/global/${u.uid}`);
+  try{
+    await rset(myPresenceRef, { nickname: myNick, at: rtdbNow() });
+    onDisconnect(myPresenceRef).remove();
+    setInterval(() => { rupdate(myPresenceRef, { at: rtdbNow() }).catch(()=>{}); }, 45_000);
+  }catch(e){ console.error('RTDB presence write failed:', e); }
+
+  // 참여자 목록 (2분 내 갱신만 온라인)
+  onValue(ref(rtdb, 'presence/global'), (snap) => {
+    const obj = snap.val() || {};
+    const FRESH_MS = 120_000;
+    const now = serverNow;
+    const entries = Object.entries(obj)
+      .filter(([_, v]) => typeof v?.nickname === 'string' && Number.isFinite(v?.at) && (now - v.at) < FRESH_MS)
+      .map(([uid, v]) => ({ uid, nick: (v.nickname || '익명').trim() }));
+
+    presenceEl.textContent = `현재 접속자 수: ${entries.length}명`;
+    entries.sort((a, b) => {
+      if (a.uid === u.uid) return -1;
+      if (b.uid === u.uid) return 1;
+      return a.nick.localeCompare(b.nick, 'ko');
+    });
+    userListEl.innerHTML = entries.map(({ uid, nick }) => `
+      <div class="user">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="name ${uid===u.uid ? 'me' : ''}">${esc(nick)}${uid===u.uid?' (나)':''}</span>
+      </div>`).join('') || `<div class="user"><span class="name">참여자가 없습니다.</span></div>`;
+  });
+
+  // ── (옵션) 이송요청 배너(관리자만) ─────────────────────
+  let amAdmin = false;
+  try { amAdmin = (await getDoc(doc(db,'admins',u.uid))).exists(); } catch {}
+  if (REQ_ID && amAdmin) {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'margin:8px 0 12px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff';
+    banner.innerHTML = `
+      <b>이송 요청</b> <code>#${REQ_ID}</code>
+      <div id="t-sum" style="margin-top:6px;color:#374151;font-size:14px">불러오는 중…</div>
+      <div id="t-actions" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"></div>`;
+    bannerMount.appendChild(banner);
+
+    const tRef = doc(db,'transports', REQ_ID);
+    onSnapshot(tRef, snap=>{
+      const sum = document.getElementById('t-sum');
+      const box = document.getElementById('t-actions');
+      box.innerHTML = '';
+      if(!snap.exists()){ sum.textContent = '요청을 찾을 수 없습니다.'; return; }
+      const x = snap.data();
+      sum.textContent = `${x.priority==='STAT'?'[긴급]':'[보통]'} ${x.from} → ${x.to} · 상태: ${x.status}`;
+
+      const upd = (patch)=>updateDoc(tRef, patch).catch(err);
+      const btn = (label, fn, danger=false)=>{
+        const b=document.createElement('button');
+        b.className='btn-mini'+(danger?' btn-danger':''); b.textContent=label; b.onclick=fn; box.appendChild(b);
+      };
+
+      if(x.status==='queued')   btn('배정', ()=>upd({status:'assigned','timestamps.assignedAt':serverTimestamp()}));
+      if(x.status==='assigned') btn('픽업 시작', ()=>upd({status:'pickup','timestamps.pickupAt':serverTimestamp()}));
+      if(x.status==='pickup' || x.status==='assigned')
+                                btn('이동 시작', ()=>upd({status:'enroute','timestamps.enrouteAt':serverTimestamp()}));
+      if(['assigned','pickup','enroute'].includes(x.status))
+                                btn('완료', ()=>upd({status:'done','timestamps.doneAt':serverTimestamp()}), true);
+    }, (e)=>{ console.warn('transports read failed (likely non-admin):', e?.code||e?.message||e); });
+  }
+
+  // 메시지 실시간
+  const q = query(
+    collection(db,'rooms',ROOM_ID,'messages'),
+    orderBy('createdAt','asc'),
+    limit(500)
+  );
+
+  let firstLoaded = false;
+
+  stopMsgs = onSnapshot(q, (snap) => {
+    // ── 배지용 신호: 초기 로딩 이후에만, 추가·특정 수정까지 감지
+    if (firstLoaded) {
+      const changes = snap.docChanges();
+      changes.forEach(ch => {
+        if (ch.type === 'added') {
+          const d  = ch.doc.data();
+          const ts = d?.createdAt?.toMillis?.()
+                  ?? (d?.createdAt?._seconds * 1000)
+                  ?? Date.now();
+          notifyNewMessage(ts);
+        }
+        if (ch.type === 'modified') {
+          const d  = ch.doc.data();
+          const ts = d?.createdAt?.toMillis?.()
+                  ?? (d?.createdAt?._seconds * 1000)
+                  ?? 0;
+          if (ts > 0 && !ch.doc.metadata.hasPendingWrites) {
+            notifyNewMessage(ts);
+          }
+        }
+      });
+    }
+
+    // ─ 기존 렌더링(풀 리렌더) ─
+    reactUnsubs.forEach(unsub=>{ try{unsub();}catch{} });
+    reactUnsubs.clear();
+
+    const stick=(list.scrollHeight-list.scrollTop-list.clientHeight)<20;
+    list.innerHTML='';
+
+    snap.forEach(mDoc=>{
+      const m=mDoc.data();
+      const mine=m.senderUid===me.uid;
+
+      const bubble=document.createElement('div');
+      bubble.className='bubble '+(mine?'mine':'other');
+
+      const name=document.createElement('div'); name.className='name'; name.textContent=(m.senderName||'익명');
+      const body=document.createElement('div'); body.className='text'; body.textContent=m.text||'';
+      bubble.append(name,body);
+
+      const chips=document.createElement('div'); chips.className='reactions'; bubble.append(chips);
+
+      const time=document.createElement('div'); time.className='time';
+      const ts = m.createdAt?.toDate?.() || new Date();
+      time.textContent = ts.toLocaleString();
+
+      if(mine){
+        const del=document.createElement('button');
+        del.textContent='삭제';
+        del.style.cssText='margin-left:8px;border:0;background:var(--danger);color:#fff;border-radius:8px;padding:2px 8px;cursor:pointer';
+        del.onclick=async()=>{ if(confirm('삭제할까요?')) await deleteDoc(doc(db,'rooms',ROOM_ID,'messages',mDoc.id)); };
+        const meta=document.createElement('div'); meta.style.cssText='display:flex;align-items:center;gap:6px';
+        meta.append(time,del); bubble.append(meta);
+      }else{
+        bubble.append(time);
+      }
+
+      list.appendChild(bubble);
+
+      /* reactions snapshot */
+      const rCol = collection(db,'rooms',ROOM_ID,'messages',mDoc.id,'reactions');
+      const unsub = onSnapshot(rCol,(rs)=>{
+        const counts = Object.fromEntries(REACTIONS.map(e=>[e,0]));
+        let myType=null;
+        rs.forEach(r=>{
+          const t=r.data()?.type;
+          if(REACTIONS.includes(t)) counts[t]=(counts[t]||0)+1;
+          if(r.id===me.uid) myType=t||null;
+        });
+        chips.innerHTML='';
+        REACTIONS.forEach(em=>{
+          const c=counts[em]||0;
+          if(c>0){
+            const div=document.createElement('button');
+            div.type='button';
+            div.className='chip'+(myType===em?' me':'');
+            div.innerHTML=`<span class="emo">${em}</span><span class="cnt">${c}</span>`;
+            div.addEventListener('click', ()=> toggleReaction(mDoc.id, em), {passive:true});
+            div.addEventListener('pointerdown', ()=> toggleReaction(mDoc.id, em), {passive:true});
+            chips.appendChild(div);
+          }
+        });
+      });
+      reactUnsubs.set(mDoc.id, unsub);
+
+      /* picker */
+      attachLongPressPicker(bubble, (em)=> toggleReaction(mDoc.id, em));
+      bubble.addEventListener('click', (e)=>{
+        if(e.detail===1 && window.matchMedia('(max-width: 980px)').matches){
+          const r=bubble.getBoundingClientRect();
+          showPicker(bubble, r.left+r.width/2, r.top-8, (em)=>toggleReaction(mDoc.id, em));
+        }
+      });
+      bubble.addEventListener('contextmenu',(e)=>{ e.preventDefault(); showPicker(bubble, e.clientX, e.clientY, (em)=>toggleReaction(mDoc.id, em)); });
+    });
+
+    if(stick) list.scrollTop = list.scrollHeight;
+
+    // 초기 렌더 직후 1회 + 바닥 보고 있으면 자동 읽음
+    if (!firstLoaded) {
+      firstLoaded = true;
+      notifyRead();
+    } else {
+      if (isAtBottom(list)) notifyRead();
+    }
+  });
+
+  textEl.disabled=false; sendEl.disabled=false; textEl.focus();
+  updateCounter();
+});
+
+/* send + limit */
+textEl.addEventListener('compositionstart', ()=>{ isComposing=true; });
+textEl.addEventListener('compositionend',   ()=>{ isComposing=false; });
+textEl.addEventListener('input', updateCounter);
+
+async function sendMsg(){
+  const raw=textEl.value||'';
+  const shownLen=raw.length;
+  if(shownLen===0) return;
+  if(shownLen>MAX_LEN){ alert(`메시지는 최대 ${MAX_LEN}자까지 보낼 수 있어요.`); return; }
+  const t=raw.trim(); if(!t) return;
+
+  try{
+    await addDoc(collection(db,'rooms',ROOM_ID,'messages'),{
+      text:t, senderUid:auth.currentUser.uid, senderName:myNick, createdAt:serverTimestamp()
+    });
+    textEl.value=''; updateCounter(); list.scrollTop=list.scrollHeight;
+    // 전송 직후 읽음 처리(내가 열람 중이므로)
+    setTimeout(()=>notifyRead(), 80);
+  }catch(e){ err(e); }
+}
+sendEl.onclick=sendMsg;
+textEl.addEventListener('keydown',e=>{
+  if(isComposing) return;
+  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); }
+});
+
+/* clear */
+btnClear.onclick=async()=>{
+  try{
+    const amAdmin=(await getDoc(doc(db,'admins',auth.currentUser.uid))).exists();
+    const ok=confirm(amAdmin?'정말 전체 채팅을 삭제할까요?':'내 메시지만 삭제합니다. 진행할까요?');
+    if(!ok) return;
+    const q=query(collection(db,'rooms',ROOM_ID,'messages'),limit(500));
+    const snap=await getDocs(q); const batch=writeBatch(db);
+    snap.forEach(d=>{
+      const m=d.data();
+      if(amAdmin||m.senderUid===auth.currentUser.uid) batch.delete(d.ref);
+    });
+    await batch.commit(); alert(amAdmin?'모든 메시지를 삭제했습니다.':'내 메시지를 삭제했습니다.');
+  }catch(e){ err(e); }
+};
+
+/* logout (선택: 별도 버튼 연결 시) */
+const logoutBtn = document.getElementById('logout');
+logoutBtn && (logoutBtn.onclick=async()=>{
+  try{
+    if(stopMsgs) stopMsgs();
+    reactUnsubs.forEach(u=>{ try{u();}catch{} }); reactUnsubs.clear();
+    if(myPresenceRef){
+      await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js")
+        .then(({remove})=>remove(myPresenceRef)).catch(()=>{});
+    }
+    await signOut(auth);
+  }catch(e){ err(e); }
+});
+
+/* reactions */
+async function toggleReaction(msgId, em){
+  const rRef = doc(db,'rooms',ROOM_ID,'messages',msgId,'reactions', auth.currentUser.uid);
+  try{
+    const cur = await getDoc(rRef);
+    if(cur.exists() && cur.data()?.type === em){
+      await deleteDoc(rRef);
+    }else{
+      await setDoc(rRef, { type: em, at: serverTimestamp(), by: auth.currentUser.uid, name: (auth.currentUser.displayName||'') }, { merge:true });
+    }
+  }catch(e){ err(e); }
+}
+
+/* long press picker */
+function attachLongPressPicker(targetEl, onPick){
+  let timer=null, startX=0, startY=0;
+  const delay=420, threshold=10;
+  const clearTimer=()=>{ if(timer){ clearTimeout(timer); timer=null; } };
+
+  targetEl.addEventListener('mousedown',(e)=>{ startX=e.clientX; startY=e.clientY; timer=setTimeout(()=> showPicker(targetEl, startX, startY, onPick), delay); });
+  targetEl.addEventListener('mousemove',(e)=>{ if(!timer) return; if(Math.hypot(e.clientX-startX, e.clientY-startY)>threshold) clearTimer(); });
+  targetEl.addEventListener('mouseup', clearTimer);
+  targetEl.addEventListener('mouseleave', clearTimer);
+
+  targetEl.addEventListener('touchstart',(e)=>{ const t=e.touches[0]; startX=t.clientX; startY=t.clientY; timer=setTimeout(()=> showPicker(targetEl, startX, startY, onPick), delay); }, {passive:true});
+  targetEl.addEventListener('touchmove',(e)=>{ if(!timer) return; const t=e.touches[0]; if(Math.hypot(t.clientX-startX, t.clientY-startY)>threshold) clearTimer(); }, {passive:true});
+  targetEl.addEventListener('touchend', clearTimer, {passive:true});
+  targetEl.addEventListener('touchcancel', clearTimer, {passive:true});
+}
+
+function showPicker(anchorEl, x, y, onPick){
+  hidePicker();
+  const r = anchorEl.getBoundingClientRect();
+  const px = x ?? (r.left + r.width/2);
+  const top = (y ?? r.top) - 56;
+
+  const el=document.createElement('div');
+  el.className='picker';
+  el.style.left = `${Math.max(8, px-100)}px`;
+  el.style.top  = `${window.scrollY + Math.max(8, top)}px`;
+  el.innerHTML = ["☑️","👍","💪","😂","🔥"].map(e=>`<button type="button" data-em="${e}" aria-label="${e}">${e}</button>`).join('');
+  document.body.appendChild(el);
+  currentPicker=el;
+
+  const closeIfOutside = (ev)=>{ if(!el.contains(ev.target)){ hidePicker(); document.removeEventListener('mousedown', closeIfOutside, true); document.removeEventListener('touchstart', closeIfOutside, true); } };
+  document.addEventListener('mousedown', closeIfOutside, true);
+  document.addEventListener('touchstart', closeIfOutside, true);
+
+  el.querySelectorAll('button').forEach(b=>{
+    const pick = ()=>{ const em=b.getAttribute('data-em'); hidePicker(); onPick?.(em); };
+    b.addEventListener('click', pick, {passive:true});
+    b.addEventListener('pointerdown', pick, {passive:true});
+    b.addEventListener('touchstart', pick, {passive:true});
+  });
+}
+function hidePicker(){ if(currentPicker){ try{currentPicker.remove();}catch{} currentPicker=null; } }
+</script>
+</body>
+</html>

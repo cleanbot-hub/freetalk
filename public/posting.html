@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="icon" href="data:,">
+  <title>Posting</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f7f8fb;--ink:#0f1724;--muted:#6b7280;--accent:#6d28d9;--accent2:#7c3aed;
+      --danger:#ef4444;--bd:#e5e7eb;--radius:12px;--max:980px
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:var(--max);margin:16px auto;padding:12px}
+    header.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:#fff;color:#111;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff;border:0}
+    .btn.danger{background:var(--danger);color:#fff;border:0}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--bd);background:#f8fafc;font-size:12px;color:#374151}
+    .card{background:#fff;border:1px solid var(--bd);border-radius:var(--radius);box-shadow:0 8px 26px rgba(2,6,23,.06);padding:14px}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .list{display:flex;flex-direction:column;gap:12px}
+    .post{border:1px solid #eef;border-radius:12px;padding:14px;background:#fff}
+    .post-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
+    .title-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .title{font-size:18px;font-weight:700}
+    .nick{font-size:12px;color:#4b5563}
+    .meta{font-size:12px;color:var(--muted)}
+    .content{white-space:pre-wrap;line-height:1.6;margin-top:8px;padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #f0f2f5}
+    .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .like{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;border:1px solid var(--bd);background:#fff;cursor:pointer}
+    .like.on{background:#f3f0ff;border-color:#ddd}
+    .cmts{margin-top:12px;border-top:1px solid var(--bd);padding-top:12px}
+    .cmt{padding:10px;border:1px solid #f0f2f5;border-radius:10px;background:#fff;margin-bottom:8px}
+    .cmt-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px;gap:8px}
+    .cmt-body{white-space:pre-wrap}
+    .row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+    .field{flex:1;min-width:200px;padding:11px 12px;border-radius:10px;border:1px solid var(--bd);background:#fff}
+    .empty{color:var(--muted);text-align:center;padding:18px;background:#fafbff;border-radius:10px;border:1px dashed #e5e7eb}
+    .imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px}
+    .thumb{position:relative;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff}
+    .thumb img{width:100%;height:120px;object-fit:cover;display:block;transition:transform .18s ease}
+    .thumb:hover img{transform:scale(1.03)}
+    .x{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:0;border-radius:8px;padding:2px 6px;cursor:pointer}
+    /* === Lightbox === */
+    .viewer-backdrop{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;padding-top:max(8px,env(safe-area-inset-top))}
+    .viewer-wrap{position:relative;max-width:96vw;max-height:92vh}
+    .viewer-img{max-width:96vw;max-height:92vh;object-fit:contain;display:block;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.35);user-select:none}
+    .viewer-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);padding:10px 12px;border-radius:10px;cursor:pointer;backdrop-filter:blur(6px)}
+    .viewer-prev{left:8px}.viewer-next{right:8px}
+    .viewer-close{position:fixed;top:max(16px,env(safe-area-inset-top));right:16px;z-index:9999;background:rgba(0,0,0,.55);color:#fff;border:0;padding:8px 12px;border-radius:10px;cursor:pointer;backdrop-filter:blur(6px)}
+    @media (max-width:480px){
+      header.top{flex-wrap:wrap}
+      .nav{justify-content:flex-start}
+      .toolbar{flex-direction:column;align-items:flex-start}
+      .content{padding:10px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/index.html"><strong>Posting</strong></a>
+    <nav class="nav">
+      
+      <a class="btn" href="/chat.html">채팅</a>
+      <button id="btn-new" class="btn primary">글쓰기</button>
+      <button id="btn-logout" class="btn">로그아웃</button>
+    </nav>
+  </header>
+
+  <section class="card">
+    <div class="toolbar">
+      <div><strong>POST</strong> <span id="post-count" class="badge">0 posts</span></div>
+      <span class="badge">로그인한 사용자만 글/댓글/좋아요/사진 업로드 가능</span>
+    </div>
+    <div id="post-list" class="list"><div class="empty">아직 글이 없습니다. 첫 글을 올려보세요!</div></div>
+  </section>
+</div>
+
+<!-- Lightbox -->
+<div id="viewer" class="viewer-backdrop" aria-hidden="true">
+  <div class="viewer-wrap">
+    <img id="viewer-img" class="viewer-img" alt="미리보기">
+    <button id="viewer-close" class="viewer-close" type="button">닫기 ✕</button>
+    <button id="viewer-prev"  class="viewer-btn viewer-prev"  type="button">‹</button>
+    <button id="viewer-next"  class="viewer-btn viewer-next"  type="button">›</button>
+  </div>
+</div>
+
+<!-- Cloudinary Upload Widget -->
+<script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+<script type="module" src="/js/posting.js"></script>
+
+</body>
+</html>
