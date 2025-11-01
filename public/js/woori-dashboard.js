@@ -1,8 +1,28 @@
+/* ===========================
+   woori-dashboard.js (완성본)
+   - SW 등록 + FCM init (토큰 저장, 포그라운드 수신)
+   - 권한 요청은 '사용자 클릭'에서만
+   - 네트워크 상황에 따라 Long-Polling 사용
+   - 로그아웃 시 현재 기기의 토큰 삭제
+   - 기존 기능 유지
+=========================== */
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-import { getAuth,onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
 import {
-  getFirestore,collection,query,where,orderBy,onSnapshot,Timestamp,updateDoc,deleteDoc,doc,getDoc,serverTimestamp,limit
+  getAuth, onAuthStateChanged,
+  signOut,
+  reauthenticateWithCredential, EmailAuthProvider, updatePassword
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
+import {
+  initializeFirestore, collection, query, where, orderBy, onSnapshot,
+  Timestamp, updateDoc, deleteDoc, doc, getDoc, serverTimestamp, limit, setDoc
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+import {
+  getMessaging, getToken, onMessage, isSupported
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js';
 
 /* ===== DOM/유틸 ===== */
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
@@ -37,12 +57,66 @@ function renderLinePlain(x){
 }
 
 const clock=$('#clock'),me=$('#me'),list=$('#list');
+const btnLogout   = document.getElementById('btn-logout');
+const btnChangePw = document.getElementById('btn-change-pw');
+const btnEnablePush = document.getElementById('btn-enable-push'); // 🔔 클릭으로 권한 요청
+const pwModal     = document.getElementById('pw-modal');
+const pwCancel    = document.getElementById('pw-cancel');
+const pwSave      = document.getElementById('pw-save');
+const pwCur       = document.getElementById('pw-current');
+const pwNew1      = document.getElementById('pw-new1');
+const pwNew2      = document.getElementById('pw-new2');
 const cntOpen=$('#cnt-open'),cntProg=$('#cnt-prog'),cntDone=$('#cnt-done');
 const transOnly=$('#trans-only'),miscOnly=$('#misc-only'),soundToggle=$('#sound-toggle');
 $('#go-woori').onclick=()=>location.href='woori.html';
-$('#go-posting').onclick=()=>location.href='posting.html';
 const dayInput=$('#day'),prevBtn=$('#prev-day'),nextBtn=$('#next-day');
 function tick(){clock.textContent=fmt(new Date());} tick(); setInterval(tick,1000);
+
+/* ===== 비밀번호 변경 모달 ===== */
+function openPwModal() {
+  if (!auth.currentUser) { alert('로그인이 필요합니다.'); return; }
+  pwCur.value = ''; pwNew1.value = ''; pwNew2.value = '';
+  const uname = document.getElementById('pw-username');
+  if (uname) uname.value = auth.currentUser?.email || auth.currentUser?.displayName || '';
+  pwModal.removeAttribute('inert');
+  pwModal.style.display = 'flex';
+  pwModal.setAttribute('aria-hidden', 'false');
+  pwCur.focus();
+}
+function closePwModal() {
+  document.getElementById('btn-change-pw')?.focus();
+  pwModal.setAttribute('aria-hidden', 'true');
+  pwModal.setAttribute('inert', '');
+  pwModal.style.display = 'none';
+}
+btnChangePw?.addEventListener('click', openPwModal);
+pwCancel?.addEventListener('click', closePwModal);
+pwModal?.addEventListener('click', (e)=>{ if(e.target===pwModal) closePwModal(); });
+pwSave?.addEventListener('click', async ()=>{
+  try{
+    const u = auth.currentUser;
+    if(!u) return alert('로그인이 필요합니다.');
+    const cur = (pwCur.value||'').trim();
+    const n1  = (pwNew1.value||'').trim();
+    const n2  = (pwNew2.value||'').trim();
+    if(!cur)        return alert('현재 비밀번호를 입력하세요.');
+    if(n1.length<6) return alert('새 비밀번호는 6자 이상이어야 합니다.');
+    if(n1!==n2)     return alert('새 비밀번호 확인이 일치하지 않습니다.');
+    const email = u.email; if(!email) return alert('이메일 정보가 없어 재인증을 진행할 수 없습니다.');
+    const cred = EmailAuthProvider.credential(email, cur);
+    await reauthenticateWithCredential(u, cred);
+    await updatePassword(u, n1);
+    alert('비밀번호가 변경되었습니다. 다음 로그인부터 적용됩니다.');
+    closePwModal();
+  }catch(e){
+    const map = {
+      'auth/wrong-password': '현재 비밀번호가 올바르지 않습니다.',
+      'auth/weak-password':  '새 비밀번호가 너무 짧습니다 (6자 이상).',
+      'auth/too-many-requests': '시도가 잦습니다. 잠시 후 다시 시도하세요.',
+    };
+    alert(map[e?.code] || ('변경 실패: ' + (e?.message || e?.code || e)));
+  }
+});
 
 /* 처리시간 DOM */
 const avgTimeEl=document.getElementById('avg-time');
@@ -58,11 +132,80 @@ const firebaseConfig={apiKey:"AIzaSyACn_-2BLztKYmBKXtrKNtMsC-2Y238oug",authDomai
 projectId:"woori-1ecf5",storageBucket:"woori-1ecf5.firebasestorage.app",messagingSenderId:"1073097361525",
 appId:"1:1073097361525:web:3218ced6a040aaaf4d503c",databaseURL:"https://woori-1ecf5-default-rtdb.firebaseio.com"};
 const app=initializeApp(firebaseConfig);
+
+/* 네트워크 상태에 따라 Long-Polling 조건부 사용 */
+const needLP = !('ReadableStream' in window) || navigator.connection?.saveData === true;
+const db = initializeFirestore(app, needLP ? {
+  experimentalForceLongPolling: true,
+  useFetchStreams: false
+} : {});
+
 const auth=getAuth(app);
-const db=getFirestore(app);
+
+/* ===== FCM / Web Push ===== */
+const VAPID_KEY = 'BDR1RJklUhPgWbxUpsX-T9tsRCJamok1icmmkSgaz2NGoTj0HiaMpuJ7jY2hsPibWdIlZfC3XnuvMlA6TxOKQfQ';
+
+// SW 등록 + (필요시) 권한 요청 + 토큰 저장 + 포그라운드 수신
+async function initPush(user, { fromClick=false } = {}){
+  try{
+    if (!(await isSupported?.())) { console.warn('FCM 미지원 브라우저'); return; }
+    if (!('serviceWorker' in navigator)) { console.warn('Service Worker 미지원'); return; }
+
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    // 자동 호출에서는 권한 팝업을 띄우지 않음 (콘솔 Violation 방지)
+    if (Notification.permission === 'default' && !fromClick) {
+      console.log('알림 권한은 사용자 클릭 시 요청 예정');
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+    }
+
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (!token) { console.warn('토큰 발급 실패'); return; }
+
+    await setDoc(
+      doc(db, 'users', user.uid, 'fcmTokens', token),
+      { at: serverTimestamp(), ua: navigator.userAgent||'' },
+      { merge: true }
+    );
+    console.log('[dashboard] FCM token saved');
+
+    onMessage(messaging, (payload) => {
+      const n = payload.notification || {};
+      const d = payload.data || {};
+      const title = n.title || d.title || '새 알림';
+      const body  = n.body  || d.body  || '';
+      try { alert(`📢 ${title}\n${body}`); } catch {}
+      // 필요하면 즉시 이동: if (d.url) location.href = d.url;
+    });
+  }catch(e){
+    console.error('initPush error:', e);
+  }
+}
+
+// 로그아웃 시 현재 기기의 토큰 삭제 + signOut
+async function logoutAndCleanup(user){
+  try{
+    const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (token) {
+      await deleteDoc(doc(db, 'users', user.uid, 'fcmTokens', token));
+      console.log('🧹 대시보드: FCM 토큰 삭제 완료');
+    }
+  }catch(e){
+    console.warn('대시보드 토큰 삭제 중 오류:', e);
+  }
+  await signOut(auth);
+  location.replace('login.html'); // 뒤로가기 방지
+}
 
 /* ===== 상태 ===== */
 let cur=null,isAdmin=false,unsub=null,snapshotData=[];let prevSnapshot=new Map();
+
 let unsubSurgery=null, surgeryData=[];let prevSurgerySnapshot=null;
 
 /* ===== 날짜 ===== */
@@ -79,9 +222,38 @@ nextBtn.addEventListener('click',()=>{const d=parseYMD(selectedYMD);d.setDate(d.
 
 /* ===== 로그인 ===== */
 onAuthStateChanged(auth,async user=>{
-  cur=user||null;me.textContent=user?`${user.displayName||'사용자'}님`:'로그인이 필요합니다';
+  cur=user||null;
+  me.textContent=user?`${user.displayName||'사용자'}님`:'로그인이 필요합니다';
+
+  // 로그아웃 버튼
+  if (btnLogout){
+    if (user){
+      btnLogout.style.display='inline-block';
+      btnLogout.onclick = async ()=>{
+        if(!confirm('로그아웃 하시겠어요?')) return;
+        await logoutAndCleanup(user);
+      };
+    }else{
+      btnLogout.style.display='none';
+      btnLogout.onclick = ()=>location.href='login.html';
+    }
+  }
+
+  // 관리자 여부
   try{isAdmin=user?(await getDoc(doc(db,'admins',user.uid))).exists():false;}catch{}
-  subscribeByDate(selectedYMD,true);subscribeSurgeryByDate(selectedYMD,true);
+
+  // 자동 초기화(권한 팝업은 띄우지 않음)
+  if (user) initPush(user, { fromClick:false });
+
+  // 사용자가 누르면 권한 요청
+  btnEnablePush?.addEventListener('click', async ()=>{
+    if(!auth.currentUser) return alert('로그인 후 이용해주세요.');
+    await initPush(auth.currentUser, { fromClick:true });
+    alert('알림이 활성화되었습니다.');
+  }, { once:true });
+
+  subscribeByDate(selectedYMD,true);
+  subscribeSurgeryByDate(selectedYMD,true);
 });
 
 /* ===== Toast + Beep ===== */
@@ -124,6 +296,7 @@ function playIMChime(kind='join', volume=0.35) {
 }
 
 /* ===== Firestore: 업무 ===== */
+
 function subscribeByDate(ymd,notify){
   try{unsub&&unsub();}catch{}
   const start=parseYMD(ymd);const end=new Date(start);end.setDate(end.getDate()+1);
@@ -310,6 +483,32 @@ async function quickStatus(id,nextStatus){
     await updateDoc(ref,patch);const labels={open:'대기',in_progress:'진행중',done:'완료'};showToast(`'${labels[nextStatus]||nextStatus}' 상태로 전환 중...`,'info',1800);playIMChime('note');
   }catch(e){showToast('권한 없음 또는 오류','error');}
 }
+
+/* ===== 수술 섹션: 업무 현황과 동일한 액션 ===== */
+async function quickSurgeryAction(id, action){
+  if (!isAdmin) return showToast('관리자만 변경할 수 있습니다.','error');
+  const ref = doc(db, 'surgeries', id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return showToast('문서를 찾을 수 없습니다.','error');
+  try{
+    if (action === 'delete'){
+      if (!confirm('정말 삭제하시겠습니까?')) return;
+      await deleteDoc(ref);
+      showToast('수술 항목이 삭제되었습니다.','info');
+      playIMChime('leave'); return;
+    }
+    const patch = { updatedAt: serverTimestamp() };
+    if (action === 'waiting')  { patch.status = 'waiting';  patch['timestamps.reopenedAt'] = serverTimestamp(); }
+    if (action === 'operating'){ patch.status = 'operating'; patch['timestamps.startedAt']  = serverTimestamp(); }
+    if (action === 'done')     { patch.status = 'done';     patch['timestamps.doneAt']     = serverTimestamp(); }
+    await updateDoc(ref, patch);
+    const label = { waiting:'대기', operating:'진행중', done:'완료' }[action] || action;
+    showToast(`수술 상태를 '${label}'(으)로 변경했습니다.`,'info');
+    playIMChime('note');
+  }catch(e){
+    console.error(e); showToast('변경 실패','error');
+  }
+}
 function renderSurgery(){
   const base=surgeryData.map(x=>({...x,status:x.status||'waiting'}));
   const C={w:base.filter(x=>x.status==='waiting').length,p:base.filter(x=>x.status==='operating').length,d:base.filter(x=>x.status==='done').length};
@@ -319,7 +518,31 @@ function renderSurgery(){
   const items=base.slice(0,5);
   if(!items.length){surgListEl.innerHTML='<div class="k">표시할 수술이 없습니다.</div>';return;}
   const frag=document.createDocumentFragment();
-  items.forEach(x=>{const statusK=SURG_LABEL[x.status]||x.status;const chipClass=x.status==='waiting'?'stat-open':' '&&x.status==='operating'?'stat-prog':'stat-done';const title=`[${x.surgeryDept||'-'}] ${x.surgeryName||'-'}`;const el=document.createElement('div');el.className='s-item';el.innerHTML=`<div><div><b>${esc(title)}</b></div><div class="k">${formatWhen(x.createdAt)}</div><div class="k">#${esc(x.caseId||'-')}</div>${x.note?`<div class="k">${esc(x.note)}</div>`:''}</div><span class="chip ${chipClass}">${statusK}</span>`;frag.appendChild(el);});
+  items.forEach(x=>{
+    const statusK=SURG_LABEL[x.status]||x.status;
+    const chipClass = x.status==='waiting' ? 'stat-open' : (x.status==='operating' ? 'stat-prog' : 'stat-done');
+    const title = `[${x.surgeryDept||'-'}] ${x.surgeryName||'-'}`;
+    const el=document.createElement('div');
+    el.className='s-item';
+    el.innerHTML=`
+      <div>
+        <div><b>${esc(title)}</b></div>
+        <div class="k">${formatWhen(x.createdAt)}</div>
+        <div class="k">#${esc(x.caseId||'-')}</div>
+        ${x.note?`<div class="k">${esc(x.note)}</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+        <span class="chip ${chipClass}">${statusK}</span>
+        ${isAdmin ? `
+          <div class="row" style="gap:6px;flex-wrap:wrap">
+            <button class="btn small" data-surg-act="operating" data-id="${x.id}">시작</button>
+            <button class="btn small" data-surg-act="waiting" data-id="${x.id}">대기</button>
+            <button class="btn small" data-surg-act="done" data-id="${x.id}">완료</button>
+            <button class="btn small danger" data-surg-act="delete" data-id="${x.id}">삭제</button>
+          </div>` : ``}
+      </div>`;
+    frag.appendChild(el);
+  });
   surgListEl.innerHTML='';surgListEl.appendChild(frag);
 }
 async function delTask(id){
@@ -328,12 +551,7 @@ async function delTask(id){
   catch(e){showToast('삭제 실패','error');}
 }
 
-/* ==== Chat Drawer + Unread Badge (상단 + FAB 동기화) ==== */
-
-
-
-
-
+/* ==== Chat Drawer + Unread Badge ==== */
 const chatBtn = document.getElementById('btn-chat');
 const chatBadge = document.getElementById('chat-badge');
 const chatFab = document.getElementById('chat-fab');
@@ -362,7 +580,7 @@ function setBadge(el, n){
   else { el.style.display='none'; }
 }
 
-/* Firestore 구독으로 미읽음 계산 (첫 메시지부터 정확히) */
+/* Firestore 구독으로 미읽음 계산 */
 let stopChatSnap = null;
 function subscribeChatBadge(){
   try{ stopChatSnap && stopChatSnap(); }catch{}
@@ -394,32 +612,29 @@ function ensureChatSrc(){
     chatFrame.setAttribute('src', `chat.html?room=${encodeURIComponent(CHAT_ROOM)}&embed=1`);
   }
 }
-
-// --- 읽음 즉시 반영 헬퍼 ---
 function markChatReadNow(){
-  setLastReadNow();                // 마지막 읽음 시간 로컬에 저장
-  setBadge(chatBadge, 0);          // 헤더 뱃지 바로 제거
-  setBadge(chatFabBadge, 0);       // 플로팅 버튼 뱃지도 제거
-  document.title = '대시보드';     // 제목 복구
+  setLastReadNow();
+  setBadge(chatBadge, 0);
+  setBadge(chatFabBadge, 0);
+  document.title = '대시보드';
 }
-
-
-// ✅ 수정된 openChat()
 function openChat(){
-  if (!auth.currentUser){ 
-    alert('로그인 후 이용해주세요.'); 
-    return; 
-  }
+  if (!auth.currentUser){ alert('로그인 후 이용해주세요.'); return; }
   ensureChatSrc();
   chatDim.style.display='block';
+  chatDrawer.removeAttribute('inert');
   chatDrawer.classList.add('open');
   chatDrawer.setAttribute('aria-hidden','false');
   chatOpen = true;
-  markChatReadNow(); // ✅ 열 때 읽음 처리 즉시 반영 (기존 setLastReadNow() 교체)
+  markChatReadNow();
+  chatClose?.focus();
 }
 function closeChat(){
+  chatClose?.blur();
+  chatBtn?.focus();
   chatDrawer.classList.remove('open');
   chatDrawer.setAttribute('aria-hidden','true');
+  chatDrawer.setAttribute('inert','');
   chatDim.style.display='none';
   chatOpen = false;
 }
@@ -433,16 +648,12 @@ chatPopout?.addEventListener('click', () => {
   window.open(url, '_blank', 'noopener,noreferrer');
   closeChat();
 });
-
-/* chat.html과의 postMessage: 토스트/사운드만 담당 (카운트는 스냅샷이 담당) */
 function ensureChatSrcEarly(){ ensureChatSrc(); }
 ensureChatSrcEarly();
-
 window.addEventListener('message', (e) => {
   const fromChat = (e.source === chatFrame.contentWindow);
   const sameOrigin = (e.origin === location.origin) || (e.origin === 'null');
   if (!fromChat || !sameOrigin) return;
-
   const data = e.data || {};
   if (data.type === 'chat:new' && data.room === CHAT_ROOM) {
     if (!chatOpen && !document.hasFocus()) {
@@ -452,11 +663,13 @@ window.addEventListener('message', (e) => {
     markChatReadNow();
   }
 });
-window.addEventListener('focus', () => { if (chatOpen) markChatReadNow();; });
+window.addEventListener('focus', () => { if (chatOpen) markChatReadNow(); });
 
-/* 필요시: 초기 전체 미읽음 방지
-if (!localStorage.getItem(LS_LAST_READ_KEY)) {
-  localStorage.setItem(LS_LAST_READ_KEY, String(Date.now()));
-}
-*/
-
+/* ===== 수술 빠른전환 버튼 클릭 위임 ===== */
+surgListEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-surg-act]');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  const action = btn.dataset.surgAct;
+  quickSurgeryAction(id, action);
+});

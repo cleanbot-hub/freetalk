@@ -1,10 +1,21 @@
+// ===============================
+// woori.js (완성본)
+// - SW 등록 + FCM init (토큰 저장/포그라운드 수신)
+// - 권한 요청은 '사용자 클릭'에서만
+// - 네트워크 조건부 Long-Polling
+// - 로그아웃 시 현재 기기의 FCM 토큰 삭제
+// ===============================
+
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import {
   initializeFirestore, setLogLevel,
   collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot,
-  updateDoc, deleteDoc, doc, Timestamp, limit, getDoc, deleteField
+  updateDoc, deleteDoc, doc, Timestamp, limit, getDoc, deleteField, setDoc
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import {
+  getMessaging, getToken, onMessage, isSupported
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js';
 
 const $ = id=>document.getElementById(id);
 const esc = s => (s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
@@ -38,13 +49,75 @@ const app = initializeApp({
 /* 콘솔 노이즈 최소화 */
 setLogLevel('error');
 
-/* 망 호환성 높이기 */
-const db = initializeFirestore(app, {
+/* 네트워크 상태에 따라 Long-Polling 조건부 사용 */
+const needLP = !('ReadableStream' in window) || navigator.connection?.saveData === true;
+const db = initializeFirestore(app, needLP ? {
   experimentalForceLongPolling: true,
   useFetchStreams: false
-});
+} : {});
 
 const auth = getAuth(app);
+
+/* ===== FCM / Web Push ===== */
+const VAPID_KEY = 'BDR1RJklUhPgWbxUpsX-T9tsRCJamok1icmmkSgaz2NGoTj0HiaMpuJ7jY2hsPibWdIlZfC3XnuvMlA6TxOKQfQ';
+
+// SW 등록 + (필요시) 권한 요청 + 토큰 저장 + 포그라운드 수신
+async function initPush(user, { fromClick = false } = {}) {
+  try {
+    if (!(await isSupported?.())) { console.warn('FCM 미지원 브라우저'); return; }
+    if (!('serviceWorker' in navigator)) { console.warn('Service Worker 미지원'); return; }
+
+    const reg = await navigator.serviceWorker.register('/sw.js');
+
+    // 자동 호출에서는 권한 팝업을 띄우지 않음 (콘솔 Violation 방지)
+    if (Notification.permission === 'default' && !fromClick) {
+      console.log('알림 권한은 사용자 클릭 시 요청 예정');
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+    }
+
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (!token) { console.warn('토큰 발급 실패'); return; }
+
+    await setDoc(
+      doc(db, 'users', user.uid, 'fcmTokens', token),
+      { at: serverTimestamp(), ua: navigator.userAgent || '' },
+      { merge: true }
+    );
+
+    onMessage(messaging, (payload) => {
+      const n = payload.notification || {};
+      const d = payload.data || {};
+      const title = n.title || d.title || '새 알림';
+      const body  = n.body  || d.body  || '';
+      try { alert(`📢 ${title}\n${body}`); } catch {}
+      // 필요하면 즉시 이동: if (d.url) location.href = d.url;
+    });
+  } catch (e) {
+    console.error('[woori] initPush error:', e);
+  }
+}
+
+// 로그아웃 시 현재 기기의 토큰 삭제 + signOut
+async function logoutAndCleanup(user){
+  try{
+    const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (token) {
+      await deleteDoc(doc(db, 'users', user.uid, 'fcmTokens', token));
+      console.log('🧹 woori: FCM 토큰 삭제 완료');
+    }
+  }catch(e){
+    console.warn('woori 토큰 삭제 중 오류:', e);
+  }
+  await signOut(auth);
+  location.replace('login.html');
+}
 
 /* Auth */
 let currentUser=null;
@@ -59,13 +132,27 @@ onAuthStateChanged(auth, async (user)=>{
     myList.innerHTML='<div class="k">로그인 후 이용해주세요.</div>';
     return;
   }
+
   if(!user.displayName && user.email){
     try{await updateProfile(user,{displayName:user.email.split('@')[0]});}catch{}
   }
   mePill.textContent=`${user.displayName||'사용자'}님`;
-  btnLogout.textContent='로그아웃'; btnLogout.classList.add('ghost');
-  btnLogout.onclick=()=>signOut(auth);
+
   btnDashboard.onclick=()=>location.href='woori-dashboard.html';
+
+  // 로그아웃: 토큰 정리 후 로그아웃
+  btnLogout.textContent='로그아웃'; btnLogout.classList.add('ghost');
+  btnLogout.onclick=async ()=>{ if(confirm('로그아웃 하시겠어요?')) await logoutAndCleanup(user); };
+
+  // 자동 초기화(권한 팝업은 띄우지 않음)
+  initPush(user, { fromClick: false });
+
+  // 사용자가 직접 켜기 버튼을 눌렀을 때만 권한 팝업
+  document.getElementById('btn-enable-push')?.addEventListener('click', async ()=>{
+    if(!auth.currentUser) return alert('로그인 후 이용해주세요.');
+    await initPush(auth.currentUser, { fromClick: true });
+    alert('알림이 활성화되었습니다.');
+  }, { once:true });
 
   resetCaseId();
   subTodaySurgeries();
@@ -82,7 +169,7 @@ const fmtWhen=(ts)=>{try{const d=ts?.toDate?.()||new Date();return `${d.getFullY
 function makeCaseId(){const d=new Date();return `S-${d.getFullYear()}${Z(d.getMonth()+1)}${Z(d.getDate())}-${Math.floor(Math.random()*10000).toString().padStart(4,'0')}`;}
 function resetCaseId(){ sId.value=makeCaseId(); }
 
-/* ---- 이송 저장 (메모 비워도 OK) ---- */
+/* ---- 이송 저장 ---- */
 tSave.addEventListener('click', async ()=>{
   if(!auth.currentUser) return alert('로그인 후 이용해주세요.');
   const dept=(tDept.value||'').trim(); if(!dept) return alert('목적지/부서를 입력하세요.');
@@ -97,14 +184,14 @@ tSave.addEventListener('click', async ()=>{
       timestamps:{createdAt:serverTimestamp()},
       createdBy:{uid:empUid,name:empName}
     };
-    if(note) payload.note=note; // 공란은 저장 안 함
+    if(note) payload.note=note;
     await addDoc(collection(db,'wardTasks'), payload);
     tDept.value=''; tNote.value=''; tMob.value='bed'; tPri.value='Routine';
     alert('이송업무가 등록되었습니다.');
   }catch(e){ alert(e.message||e.code||e); }
 });
 
-/* ---- 기타 업무 저장 (메모 비워도 OK) ---- */
+/* ---- 기타 업무 저장 ---- */
 openMisc?.addEventListener('click', ()=>{ mTitle.value=''; mDept.value=''; mPri.value='Routine'; mNote.value=''; miscModal.style.display='flex'; miscModal.setAttribute('aria-hidden','false'); });
 miscCancel?.addEventListener('click', ()=>{ miscModal.style.display='none'; miscModal.setAttribute('aria-hidden','true'); });
 miscModal?.addEventListener('click', (e)=>{ if(e.target===miscModal){ miscModal.style.display='none'; miscModal.setAttribute('aria-hidden','true'); }});
@@ -125,14 +212,14 @@ miscSave?.addEventListener('click', async ()=>{
       mobility:'walk'
     };
     if(dept) payload.dept=dept;
-    if(note) payload.note=note; // 공란은 저장 안 함
+    if(note) payload.note=note;
     await addDoc(collection(db,'wardTasks'), payload);
     miscModal.style.display='none'; miscModal.setAttribute('aria-hidden','true');
     alert('기타 업무가 등록되었습니다.');
   }catch(e){ alert(e.message||e.code||e); }
 });
 
-/* ---- 수술 저장 (메모 비워도 OK) ---- */
+/* ---- 수술 저장 ---- */
 sSave.addEventListener('click', async ()=>{
   if(!auth.currentUser) return alert('로그인 후 이용해주세요.');
   const caseId=(sId.value||'').trim();
@@ -141,7 +228,6 @@ sSave.addEventListener('click', async ()=>{
   const note=(sNote.value||'').trim();
   if(!name) return alert('수술명을 입력하세요.');
 
-  // 메모가 있을 때만 PII 검사
   const pii=/\b(\d{2,3}-\d{3,4}-\d{4}|\d{6}-\d{7}|\d{8})\b/;
   if(note && pii.test(note)) return alert('메모에 개인정보가 포함된 것 같아요. 제거 후 저장해주세요.');
 
@@ -157,7 +243,7 @@ sSave.addEventListener('click', async ()=>{
       timestamps:{},
       createdBy:{uid:empUid,name:empName}
     };
-    if(note) payload.note=note; // ✅ 메모가 비면 note 필드 자체를 저장하지 않음
+    if(note) payload.note=note;
     await addDoc(collection(db,'surgeries'), payload);
     alert('수술이 등록되었습니다.');
     sName.value=''; sNote.value=''; resetCaseId();
@@ -251,14 +337,8 @@ async function openSurgeryEdit(id){
   seTimes.textContent = `등록: ${x.createdAt?fmtWhen(x.createdAt):'-'}`;
   sEditModal.style.display='flex'; sEditModal.setAttribute('aria-hidden','false');
 }
-sEditCancel.addEventListener('click', ()=>{
-  sEditModal.style.display='none'; sEditModal.setAttribute('aria-hidden','true');
-});
-sEditModal.addEventListener('click', (e)=>{
-  if(e.target===sEditModal){
-    sEditModal.style.display='none'; sEditModal.setAttribute('aria-hidden','true');
-  }
-});
+sEditCancel.addEventListener('click', ()=>{ sEditModal.style.display='none'; sEditModal.setAttribute('aria-hidden','true'); });
+sEditModal.addEventListener('click', (e)=>{ if(e.target===sEditModal){ sEditModal.style.display='none'; sEditModal.setAttribute('aria-hidden','true'); }});
 sEditSave.addEventListener('click', async ()=>{
   if(!editingSurgeryId) return;
   const note=(seNote.value||'').trim();
@@ -272,7 +352,7 @@ sEditSave.addEventListener('click', async ()=>{
     'timestamps.editedAt':serverTimestamp(),
     status:seStatus.value
   };
-  if(note) patch.note=note; else patch.note=deleteField(); // ✅ 편집 시 공란이면 note 필드 삭제
+  if(note) patch.note=note; else patch.note=deleteField();
   if(beforeStatus!==seStatus.value){
     if(seStatus.value==='operating') patch['timestamps.startedAt']=serverTimestamp();
     else if(seStatus.value==='done') patch['timestamps.doneAt']=serverTimestamp();
@@ -395,7 +475,7 @@ editSave.onclick=async ()=>{
     const dept =(eDeptMisc.value||'').trim();
     patch.title = title?title:deleteField();
     patch.dept  = dept ?dept :deleteField();
-    patch.mobility = deleteField(); // 기타는 이동수단 제거
+    patch.mobility = deleteField();
     patch.room = deleteField(); patch.patient = deleteField();
     const parts=[`[기타] ${title||'(제목 없음)'}`]; if(dept) parts.push(dept); if(note) parts.push(note);
     newText = parts.join(' ▶ ');
@@ -419,7 +499,7 @@ editSave.onclick=async ()=>{
   catch(e){alert(e.message||e.code||e);}
 };
 
-/* ==== Chat Drawer Toggle (추가) ==== */
+/* ==== Chat Drawer Toggle ==== */
 const chatBtn = document.getElementById('btn-chat');
 const chatFab = document.getElementById('chat-fab');
 const chatDim = document.getElementById('chat-dim');
