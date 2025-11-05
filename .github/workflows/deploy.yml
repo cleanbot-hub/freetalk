@@ -38,23 +38,25 @@ jobs:
         run: |
           echo "🚀 Deploying to freetalk-at..."
 
-          # JS, CSS, 이미지 파일 업로드
-          aws s3 sync ./public s3://freetalk-at \
+          # ✅ HTML 외 모든 정적 파일(js, css, img 등)을 1년 캐시로 업로드
+          aws s3 sync . s3://freetalk-at \
             --region $AWS_REGION \
             --delete \
             --cache-control "max-age=31536000" \
             --metadata-directive REPLACE \
-            --exclude "*.html"
+            --exclude "*.html" \
+            --exclude ".git/*" \
+            --exclude ".github/*"
 
-          # HTML 파일은 별도로 짧은 캐시로 업로드
-          aws s3 sync ./public s3://freetalk-at \
+          # ✅ HTML은 짧은 캐시(60초)로 별도 업로드
+          aws s3 sync . s3://freetalk-at \
             --region $AWS_REGION \
             --delete \
             --cache-control "max-age=60" \
             --metadata-directive REPLACE \
             --exclude "*" --include "*.html"
 
-          # 정적 웹사이트 설정
+          # ✅ S3 정적 웹사이트 설정
           aws s3 website s3://freetalk-at --index-document index.html --error-document 404.html
 
           echo "✅ Deploy complete!"
