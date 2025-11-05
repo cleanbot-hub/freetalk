@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>게시글 보기 · Freetalk</title>
+<link rel="icon" href="/img/icon1101.png">
+<meta name="theme-color" content="#0b1020"/>
+
+<style>
+:root{
+  --bg:#0b1020;--panel:#121831;--ink:#e5e7eb;--muted:#9aa3b2;--bd:#1f2745;
+  --accent:#7c3aed;--accent2:#8b5cf6;--danger:#ef4444;--ok:#10b981;
+  --radius:14px;--max:960px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:linear-gradient(180deg,#0b1020,#0f1530);
+  color:var(--ink);
+  font:15px/1.65 Inter,system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif;
+}
+.wrap{max-width:var(--max);margin:20px auto;padding:0 16px}
+.panel{
+  background:linear-gradient(180deg,#121831,#0f142d);
+  border:1px solid var(--bd);
+  border-radius:var(--radius);
+  box-shadow:0 12px 36px rgba(0,0,0,.35);
+  padding:16px;
+}
+.meta{color:var(--muted);font-size:13px}
+h1{font-size:20px;margin:0 0 8px 0}
+.toolbar{
+  display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0 14px;
+}
+.btn{
+  border:1px solid var(--bd);
+  background:#0d1430;
+  color:#e5e7eb;
+  border-radius:10px;
+  padding:8px 10px;
+  cursor:pointer;
+  transition:.2s;
+}
+.btn:hover{border-color:#2a3562}
+.btn.primary{background:linear-gradient(180deg,#8b5cf6,#7c3aed);border-color:#6d28d9}
+.btn.danger{background:#341419;border-color:#4b1d23;color:#fecaca}
+.btn.ghost{background:#0b1230}
+.content img {
+  display: block;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 12px;
+  margin: 10px auto;
+  border: 1px solid #1f274a;
+  box-shadow: 0 6px 24px rgba(0,0,0,.45);
+}
+
+/* 이미지 갤러리 (전체 폭 반응형) */
+#images {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+#images img {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  border-radius: 12px;
+  object-fit: contain;
+  background: #0b1120;
+  border: 1px solid #1f274a;
+  box-shadow: 0 6px 24px rgba(0,0,0,.45);
+}
+
+/* 모바일에서는 높이 제한 */
+@media (max-width: 768px) {
+  #images img {
+    max-height: 360px;
+    object-fit: contain;
+  }
+}
+
+.hr{height:1px;background:#1f274a;margin:14px 0}
+#body{white-space:pre-wrap;word-break:break-word}
+
+/* 좋아요 버튼 */
+.like {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--bd);
+  background: #111831;
+  color: #d1d5db; /* 밝은 회색 글씨 */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.like:hover {
+  background: #1c2347;
+  border-color: #7c3aed;
+  color: #fff;
+}
+
+/* 눌림(on) 상태 */
+.like.on {
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 0 10px rgba(124,58,237,.4);
+}
+.like.on:hover {
+  filter: brightness(1.08);
+}
+
+/* 댓글 */
+.cmt-wrap{margin-top:16px}
+.cmt-form{display:flex;gap:8px;align-items:flex-start}
+.field{
+  flex:1;border:1px solid var(--bd);
+  background:#0e1530;color:#e5e7eb;
+  border-radius:10px;padding:10px;
+}
+.cmt-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.cmt{border:1px dashed var(--bd);border-radius:10px;padding:10px;background:#0f1736}
+.cmt .head{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+.cmt .who{font-weight:700}
+.cmt .tools{display:flex;gap:6px}
+.empty{color:var(--muted);text-align:center;padding:10px}
+
+/* 수정 모달 */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:3000}
+.sheet{width:min(720px,92vw);background:linear-gradient(180deg,#121831,#0f142d);border:1px solid var(--bd);border-radius:16px;padding:14px}
+.sheet h4{margin:0 0 8px 0}
+.gap{display:flex;flex-direction:column;gap:8px}
+
+.thumb img,
+.post-images img,
+.post-body img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  margin: 8px 0;
+  object-fit: cover;
+}
+
+/* === 모바일에서 이미지 높이 제한 === */
+@media (max-width: 768px) {
+  .thumb img,
+  .post-images img,
+  .post-body img {
+    max-height: 280px;
+    object-fit: contain;
+  }
+}
+
+/* === 이미지 갤러리 간격 조정 === */
+.post-images {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <div class="toolbar">
+      <button class="btn ghost" onclick="history.back()">← 목록</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="meta" id="view-count"></span>
+        <button id="btn-like" class="like"><span id="like-icon">♡</span><b id="like-count">0</b></button>
+        <button id="btn-edit" class="btn" style="display:none">수정</button>
+        <button id="btn-delete" class="btn danger" style="display:none">삭제</button>
+      </div>
+    </div>
+
+    <h1 id="title">(제목)</h1>
+    <div class="meta" id="meta">작성자 · 날짜</div>
+    <div class="hr"></div>
+
+    <div id="body" class="content"></div>
+    <div id="images"></div>
+
+    <div class="cmt-wrap">
+      <div class="hr"></div>
+      <h3 style="margin:0 0 8px 0;font-size:16px">댓글</h3>
+      <form id="cmt-form" class="cmt-form" onsubmit="return false">
+        <textarea id="cmt-text" class="field" rows="3" placeholder="댓글을 입력하세요 (로그인 필요)"></textarea>
+        <button id="cmt-submit" class="btn primary">등록</button>
+      </form>
+      <div id="cmt-list" class="cmt-list"><div class="empty">불러오는 중…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 수정 모달 -->
+<div id="edit-modal" class="modal" aria-hidden="true">
+  <div class="sheet">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <h4>게시글 수정</h4>
+      <div>
+        <button id="em-cancel" class="btn">닫기</button>
+        <button id="em-save" class="btn primary">저장</button>
+      </div>
+    </div>
+    <div class="gap">
+      <input id="em-title" class="field" placeholder="제목"/>
+      <textarea id="em-body" class="field" rows="10" placeholder="내용"></textarea>
+      <div class="meta">※ 이미지 교체는 글쓰기 페이지에서 새로 등록해주세요.</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, updateDoc, deleteDoc,
+  collection, addDoc, query, orderBy, onSnapshot, setDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+
+const cfg={apiKey:"AIzaSyACn_-2BLztKYmBKXtrKNtMsC-2Y238oug",
+authDomain:"woori-1ecf5.firebaseapp.com",projectId:"woori-1ecf5"};
+const app=initializeApp(cfg); const db=getFirestore(app); const auth=getAuth(app);
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]||m));
+const fmt=t=>{try{const d=t?.toDate?.()||new Date();return d.toLocaleString();}catch{return '';}};
+const thumb=(pid,w=900)=>`https://res.cloudinary.com/dnx6obtjb/image/upload/f_auto,q_auto,c_limit,w_${w}/${pid}.jpg`;
+
+const params = new URLSearchParams(location.search);
+const id = params.get('id')?.trim();
+
+if (!id || id === 'undefined' || id === 'null') {
+  alert('잘못된 접근입니다. 게시글 ID가 없습니다.');
+  history.back();
+  throw new Error('Invalid post ID');
+}
+
+let curUser=null,isAdmin=false,postDoc=null,canEdit=false,liked=false;
+
+/* 로그인/관리자 체크 */
+onAuthStateChanged(auth,async u=>{
+  curUser=u||null;
+  try{isAdmin=!!u&&(await getDoc(doc(db,'admins',u.uid))).exists();}catch{}
+  await loadPost();
+  watchLikes();
+});
+
+/* 글 로드 */
+async function loadPost(){
+  try{
+    const snap=await getDoc(doc(db,'communityPosts',id));
+    if(!snap.exists()){ document.body.innerHTML='<div class="wrap"><div class="panel">글을 찾을 수 없습니다.</div></div>'; return; }
+    postDoc=snap.data();
+    $('#title').textContent=postDoc.title||'(제목 없음)';
+    $('#meta').textContent=`${postDoc.authorName||'익명'} · ${fmt(postDoc.createdAt)}`;
+    $('#body').textContent=postDoc.body||'';
+
+    const box=$('#images'); box.innerHTML='';
+    (postDoc.images||[]).forEach(img=>{
+      const url=typeof img==='string'?img:(img.url||thumb(img.pid));
+      if(url){const el=document.createElement('img');el.src=url;box.appendChild(el);}
+    });
+
+    canEdit=!!curUser&&(isAdmin||(postDoc.authorUid===curUser.uid));
+    $('#btn-edit').style.display=canEdit?'inline-block':'none';
+    $('#btn-delete').style.display=canEdit?'inline-block':'none';
+
+    const views=(Number(postDoc.views||0)+1);
+    $('#view-count').textContent=`조회수 ${views}`;
+    await updateDoc(doc(db,'communityPosts',id),{views, lastViewedAt:serverTimestamp()}).catch(()=>{});
+
+    watchComments();
+  }catch(e){
+    console.error(e);
+  }
+}
+
+/* 수정/삭제 */
+const em=$('#edit-modal');
+$('#btn-edit').onclick=()=>{
+  if(!canEdit)return;
+  $('#em-title').value=postDoc.title||'';
+  $('#em-body').value=postDoc.body||'';
+  em.style.display='flex';
+};
+$('#em-cancel').onclick=()=>em.style.display='none';
+$('#em-save').onclick=async()=>{
+  if(!canEdit)return;
+  const t=$('#em-title').value.trim(),b=$('#em-body').value.trim();
+  if(!t)return alert('제목 입력');
+  await updateDoc(doc(db,'communityPosts',id),{title:t,body:b,editedAt:serverTimestamp()});
+  em.style.display='none';
+  await loadPost();
+  alert('수정 완료');
+};
+$('#btn-delete').onclick=async()=>{
+  if(!canEdit)return;
+  if(!confirm('정말 삭제하시겠습니까?'))return;
+  await deleteDoc(doc(db,'communityPosts',id));
+  alert('삭제되었습니다.');
+  location.href='board.html';
+};
+
+/* 좋아요 */
+const likeBtn=$('#btn-like');
+likeBtn.onclick=toggleLike;
+function watchLikes(){
+  onSnapshot(collection(db,'communityPosts',id,'likes'),snap=>{
+    $('#like-count').textContent=snap.size||0;
+  });
+  if(curUser)checkLiked();
+}
+async function checkLiked(){
+  if(!curUser)return;
+  try{
+    const s=await getDoc(doc(db,'communityPosts',id,'likes',curUser.uid));
+    liked=s.exists();
+    likeBtn.classList.toggle('on',liked);
+    $('#like-icon').textContent=liked?'♥':'♡';
+  }catch{}
+}
+async function toggleLike(){
+  if(!curUser)return alert('로그인 후 이용해주세요.');
+  try{
+    const ref=doc(db,'communityPosts',id,'likes',curUser.uid);
+    if(liked){await deleteDoc(ref);}else{await setDoc(ref,{at:serverTimestamp(),uid:curUser.uid});}
+    liked=!liked;
+    likeBtn.classList.toggle('on',liked);
+    $('#like-icon').textContent=liked?'♥':'♡';
+  }catch(e){console.error(e);}
+}
+
+/* 댓글 */
+const cmtList=$('#cmt-list'),cmtText=$('#cmt-text');
+$('#cmt-form').onsubmit = async (e) => {
+  e.preventDefault();
+  if (!curUser) return alert('로그인 후 이용해주세요.');
+
+  const t = cmtText.value.trim();
+  if (!t) return alert('댓글을 입력하세요.');
+
+  try {
+    await addDoc(collection(db, 'communityPosts', id, 'comments'), {
+      text: t,
+      authorUid: curUser.uid,
+      authorName: curUser.displayName || '사용자',
+      createdAt: serverTimestamp()
+    });
+
+    // 성공 시 즉시 초기화
+    cmtText.value = '';
+    cmtText.blur();
+  } catch (err) {
+    console.error('댓글 작성 오류:', err);
+    alert('댓글 등록 중 문제가 발생했습니다. 네트워크를 확인해주세요.');
+  }
+};
+
+function watchComments(){
+  const qy=query(collection(db,'communityPosts',id,'comments'),orderBy('createdAt','asc'));
+  onSnapshot(qy,snap=>{
+    cmtList.innerHTML='';
+    if(snap.empty){cmtList.innerHTML='<div class="empty">댓글이 없습니다.</div>';return;}
+    snap.forEach(d=>{
+      const x=d.data(),me=curUser?.uid===x.authorUid,del=isAdmin||me;
+      const el=document.createElement('div');el.className='cmt';
+      el.innerHTML=`
+        <div class="head">
+          <div class="who">${esc(x.authorName||'익명')}</div>
+          <div class="tools">
+            <span class="meta">${fmt(x.createdAt)}</span>
+            ${del?'<button data-del class="btn small danger">삭제</button>':''}
+          </div>
+        </div>
+        <div>${esc(x.text||'')}</div>
+      `;
+      el.querySelector('[data-del]')?.addEventListener('click',async()=>{
+        if(confirm('댓글을 삭제할까요?')){
+          await deleteDoc(doc(db,'communityPosts',id,'comments',d.id));
+        }
+      });
+      cmtList.appendChild(el);
+    });
+  });
+}
+</script>
+</body>
+</html>

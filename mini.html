@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Mini홈</title>
+<link rel="icon" type="image/png" href="/img/icon1101.png">
+<meta name="theme-color" content="#0b1020"/>
+<style>
+:root{
+  --bg:#0b1020;--panel:#121831;--ink:#e5e7eb;--muted:#9aa3b2;--bd:#1f2745;
+  --accent:#7c3aed;--accent2:#8b5cf6;--radius:16px;--max:960px;
+}
+body{margin:0;background:linear-gradient(180deg,#0b1020,#0f1530);color:var(--ink);
+  font:15px/1.6 Inter,system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif;}
+.wrap{max-width:var(--max);margin:20px auto;padding:0 16px}
+.card{background:#121831;border:1px solid var(--bd);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.btn{border:1px solid var(--bd);background:#0e1430;color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0}
+.profile{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:center}
+.av{width:96px;height:96px;border-radius:20px;overflow:hidden;border:2px solid #233156;background:#0d1430;display:grid;place-items:center;font-weight:900;font-size:28px}
+.av img{width:100%;height:100%;object-fit:cover}
+.list{display:flex;flex-direction:column;gap:10px}
+.item{padding:12px;border:1px solid var(--bd);border-radius:12px;background:rgba(18,24,49,.5);cursor:pointer}
+.meta{color:var(--muted);font-size:12px}
+.field{padding:11px 12px;border-radius:10px;border:1px solid var(--bd);background:#0d1430;color:var(--ink)}
+.badge{display:inline-flex;align-items:center;border:1px solid var(--bd);border-radius:999px;padding:4px 8px;font-size:12px;background:#0d1430;color:#b7c1d9}
+
+/* ==== Drawer (글보기/글쓰기) ==== */
+#drawer{position:fixed;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(2px);
+  display:none;align-items:center;justify-content:center;z-index:100}
+.drawer-box{background:#121831;border:1px solid var(--bd);border-radius:16px;padding:20px;width:90%;max-width:640px;max-height:90%;overflow:auto}
+.close{float:right;cursor:pointer;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <div><a class="btn" href="/index.html">← 메인</a> <span class="badge" id="owner-badge">-</span></div>
+    <nav style="display:flex;gap:8px">
+      <button class="btn" id="btn-write">글쓰기</button>
+      <a class="btn" id="btn-profile" href="/profile.html">내 프로필</a>
+      <a class="btn" id="btn-login" href="/login.html">로그인</a>
+    </nav>
+  </header>
+
+  <section class="card">
+    <div class="profile">
+      <div class="av" id="mini-avatar"><span id="mini-initial">U</span></div>
+      <div>
+        <h2 id="mini-nick">사용자</h2>
+        <div class="meta" id="mini-bio"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>📄 내 글</h3>
+    <div id="mini-posts" class="list"><div class="item"><div class="meta">작성된 글이 없습니다.</div></div></div>
+  </section>
+
+  <section class="card">
+    <h3>📝 방명록</h3>
+    <div id="gb-list" class="list"><div class="item"><div class="meta">첫 인사를 남겨보세요!</div></div></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="gb-input" class="field" style="flex:1" placeholder="방명록 남기기">
+      <button id="gb-add" class="btn primary">등록</button>
+    </div>
+  </section>
+</div>
+
+<!-- Drawer -->
+<div id="drawer">
+  <div class="drawer-box">
+    <div><span class="close" id="drawer-close">✕</span></div>
+    <div id="drawer-content"></div>
+  </div>
+</div>
+
+<script type="module" src="/js/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>게시판 · Freetalk</title>
+<link rel="icon" href="/img/icon1101.png">
+<meta name="theme-color" content="#0b1020"/>
+<style>
+:root{--bg:#0b1020;--panel:#121831;--ink:#e5e7eb;--muted:#9aa3b2;--bd:#1f2745;
+--accent:#7c3aed;--accent2:#8b5cf6;--radius:14px;--max:1100px}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0b1020,#0f1530);color:var(--ink);
+  font:15px/1.6 Inter,system-ui,-apple-system,Segoe UI,Roboto,Malgun Gothic,sans-serif}
+.wrap{max-width:var(--max);margin:20px auto;padding:0 16px}
+.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.badge{border:1px solid var(--bd);border-radius:999px;padding:5px 9px;font-size:12px;color:#c7d2fe;background:#0e1430}
+.panel{background:linear-gradient(180deg,#121831,#0f142d);border:1px solid var(--bd);border-radius:var(--radius);
+  box-shadow:0 12px 36px rgba(0,0,0,.35);padding:12px}
+
+/* table */
+.table{width:100%;border-collapse:separate;border-spacing:0}
+.table th,.table td{padding:10px 10px;border-bottom:1px solid #1f274a;vertical-align:middle}
+.table th{color:#cbd5e1;font-size:13px;text-align:center;background:#0f1632;position:sticky;top:0;z-index:1}
+.table tr:hover td{background:#10183a}
+.title a{color:#e9edff;text-decoration:none}
+.title a:hover{color:#fff;text-decoration:underline}
+.meta{color:var(--muted);font-size:12px}
+.tools{display:flex;gap:6px;align-items:center}
+.btn{border:1px solid var(--bd);background:#0d1430;color:#e5e7eb;border-radius:10px;padding:8px 12px;cursor:pointer}
+.btn.primary{background:linear-gradient(180deg,var(--accent2),var(--accent));border-color:#6d28d9}
+.pager{display:flex;gap:8px;justify-content:center;margin-top:12px}
+@media (max-width:760px){
+  .table .col-date,.table .col-views,.table .col-author{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h2 id="board-name" style="margin:0 0 4px 0">전체 글보기</h2>
+      <div class="meta"><span id="board-desc">모든 게시글이 표시됩니다.</span></div>
+    </div>
+    <div class="tools">
+      <button class="btn" onclick="history.back()">← 뒤로</button>
+      <a class="btn primary" href="/posting.html">글쓰기</a>
+    </div>
+  </div>
+
+  <div class="panel">
+    <table class="table" id="post-table" aria-describedby="board-name">
+      <thead>
+        <tr>
+          <th style="width:64px">구분</th>
+          <th>제목</th>
+          <th class="col-author" style="width:160px">작성자</th>
+          <th class="col-date" style="width:140px">작성일</th>
+          <th class="col-views" style="width:90px;text-align:right">조회수</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"><tr><td colspan="5" class="meta">불러오는 중…</td></tr></tbody>
+    </table>
+
+    <div class="pager">
+      <button id="prev" class="btn" disabled>이전</button>
+      <button id="next" class="btn">다음</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import {
+  getFirestore, collection, query, where, orderBy, limit, getDocs, startAfter
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const cfg={apiKey:"AIzaSyACn_-2BLztKYmBKXtrKNtMsC-2Y238oug",
+authDomain:"woori-1ecf5.firebaseapp.com",projectId:"woori-1ecf5"};
+const app=initializeApp(cfg); const db=getFirestore(app);
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]||m));
+const fmt=t=>{try{const d=t?.toDate?.()||new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),da=String(d.getDate()).padStart(2,'0');return `${y}.${m}.${da}`;}catch{return '';}};
+const params=new URL(location.href).searchParams;
+const boardId=params.get('board')||''; // '' = 전체
+const PAGE=20;
+
+let cursor=null, stack=[]; // pagination
+
+async function loadBoardMeta(){
+  $('#board-name').textContent = '전체 글보기';
+  $('#board-desc').textContent = '모든 게시글이 표시됩니다.';
+  if(!boardId) return;
+  // boards/{id}가 있다면 이름/설명 사용
+  try{
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js");
+    const d = await getDoc(doc(db,'boards',boardId));
+    if (d.exists()){
+      const b=d.data();
+      $('#board-name').textContent=b.name||'게시판';
+      $('#board-desc').textContent=b.slug?`/${b.slug}`:'';
+    }
+  }catch{}
+}
+loadBoardMeta();
+
+function rowHTML(x,id){
+  const hasImg=(Array.isArray(x.images)&&x.images.length>0);
+  const notice = x.isNotice ? '공지' : '';
+  const tag = notice || (x.category||'');
+  return `
+    <tr>
+      <td>${tag?`<span class="badge">${esc(tag)}</span>`:''}</td>
+      <td class="title">
+        <a href="post-view.html?id=${encodeURIComponent(id)}">
+          ${hasImg ? '🖼 ' : ''}${esc(x.title||'(제목 없음)')}
+          ${x.commentCount?` <span class="meta">[${x.commentCount}]</span>`:''}
+        </a>
+      </td>
+      <td class="col-author">${esc(x.authorName||'익명')}</td>
+      <td class="col-date">${fmt(x.createdAt)}</td>
+      <td class="col-views" style="text-align:right">${x.views||0}</td>
+    </tr>`;
+}
+
+async function fetchPage(next=false){
+  let q = query(collection(db,'communityPosts'), orderBy('createdAt','desc'), limit(PAGE));
+  if (boardId){
+    q = query(collection(db,'communityPosts'),
+      where('boardId','==',boardId), orderBy('createdAt','desc'), limit(PAGE));
+  }
+  if(next && cursor) q = query(q, startAfter(cursor));
+
+  const snap = await getDocs(q);
+  const rows = [];
+  snap.forEach(d=>rows.push({ id:d.id, ...d.data() }));
+
+  // 테이블 렌더
+  const tb=$('#tbody');
+  if(rows.length===0){
+    tb.innerHTML = `<tr><td colspan="5" class="meta">게시글이 없습니다.</td></tr>`;
+  }else{
+    tb.innerHTML = rows.map(r=>rowHTML(r,r.id)).join('');
+  }
+
+  // 페이지 스택/커서
+  $('#prev').disabled = stack.length===0;
+  if(rows.length < PAGE){ $('#next').disabled=true; } else { $('#next').disabled=false; }
+  if(rows.length>0) cursor = rows[rows.length-1].createdAt;
+  // next 이동 시 이전 커서를 쌓기
+  if(next) stack.push(rows[0]?.createdAt || null);
+}
+
+$('#next').addEventListener('click', ()=>fetchPage(true));
+$('#prev').addEventListener('click', async ()=>{
+  if(stack.length===0) return;
+  const prevCursor = stack.pop();
+  // prev: 다시 처음부터 prevCursor 직전까지 건너뛰는 간단 방식
+  cursor = null;
+  $('#next').disabled=false;
+  // 처음 페이지 재로딩
+  fetchPage(false);
+});
+
+fetchPage(false);
+</script>
+</body>
+</html>

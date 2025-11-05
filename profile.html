@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Freetalk · 프로필</title>
+<link rel="icon" type="image/png" href="/img/icon1101.png">
+<link rel="apple-touch-icon" href="/img/icon1101.png">
+<meta name="theme-color" content="#0b1020"/>
+
+<style>
+:root{
+  --bg:#0b1020;--panel:#121831;--ink:#e5e7eb;--muted:#9aa3b2;
+  --bd:#1f2745;--accent:#7c3aed;--accent2:#8b5cf6;--radius:14px;
+}
+body{
+  margin:0;padding:0;background:linear-gradient(180deg,#0b1020,#0f1530);
+  color:var(--ink);font:15px/1.6 Inter,system-ui,Segoe UI,Roboto,Malgun Gothic,sans-serif;
+}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px 40px}
+
+/* ===== 상단바 ===== */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(11,16,32,.85);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--bd);
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;
+}
+.topbar .btn.small{
+  padding:6px 10px;font-size:13px;border-radius:8px;
+  background:#121831;border:1px solid var(--bd);color:#e5e7eb;
+}
+.topbar .btn.small:hover{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-color:transparent;color:#fff;
+}
+
+/* ===== 탭 ===== */
+.tabs{
+  display:flex;gap:8px;flex-wrap:wrap;
+  padding:10px 0;border-bottom:1px solid var(--bd);margin-bottom:20px;
+}
+.tab{
+  padding:8px 14px;border-radius:10px;
+  border:1px solid var(--bd);background:#121831;
+  color:#c5cbe9;font-size:14px;cursor:pointer;
+  transition:all .2s ease;
+}
+.tab:hover{background:#1c254a;}
+.tab.active{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:0;color:#fff;font-weight:600;
+}
+
+/* ===== 카드 ===== */
+.card{
+  background:linear-gradient(180deg,#121831,#0f1733);
+  border:1px solid var(--bd);border-radius:var(--radius);
+  box-shadow:0 8px 30px rgba(0,0,0,.35);
+  padding:16px;margin-bottom:18px;
+}
+
+/* ===== 버튼/입력 ===== */
+.btn{border:1px solid var(--bd);background:#0e1430;color:var(--ink);
+  padding:10px 14px;border-radius:12px;cursor:pointer;transition:.2s}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0;color:#fff}
+.btn:hover{border-color:#2a3562}
+input,textarea{
+  width:100%;padding:4px;border-radius:10px;
+  border:1px solid var(--bd);background:#0e1430;color:var(--ink);
+  font-family:inherit;resize:vertical;
+}
+textarea{min-height:100px}
+
+/* ===== 프로필 영역 ===== */
+.profile-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.profile-img{
+  width:84px;height:84px;border-radius:16px;
+  background:#0f1630;display:grid;place-items:center;
+  font-size:30px;font-weight:700;border:2px solid #fff;
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+  overflow:hidden;cursor:pointer;position:relative;
+}
+.profile-img img{width:100%;height:100%;object-fit:cover;display:block;border-radius:16px;}
+.profile-img::after{
+  content:"📷";position:absolute;bottom:4px;right:4px;
+  background:rgba(0,0,0,0.6);border-radius:6px;padding:2px 5px;
+  font-size:12px;color:#fff;
+}
+.nick{font-weight:700;font-size:18px}
+.bio{color:var(--muted);margin-top:6px;font-size:14px}
+
+@media(max-width:600px){
+  .profile-head{flex-direction:column;align-items:flex-start}
+  .tabs{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a href="/index.html" class="btn small">← 메인</a>
+  <button id="logout" class="btn small">로그아웃</button>
+</header>
+
+<div class="wrap">
+  <section class="card">
+    <div class="profile-head">
+      <div class="profile-img" id="avatar"><span>U</span></div>
+      <div>
+        <div class="nick" id="nick">게스트</div>
+        <div class="bio" id="bio-sub">로그인하여 Mini홈을 설정해보세요.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="mini">Mini홈</div>
+    <div class="tab" data-tab="posts">내 글</div>
+    <div class="tab" data-tab="settings">설정</div>
+  </div>
+
+  <!-- Mini홈 -->
+  <section id="tab-mini" class="tab-content">
+    <div class="card">
+      <h3>Mini홈 소개글</h3>
+      <textarea id="bio-text" placeholder="나를 소개하는 한마디를 입력해 보세요."></textarea>
+      <div style="text-align:right;margin-top:10px">
+        <button id="bio-save" class="btn primary">저장</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 내 글 -->
+  <section id="tab-posts" class="tab-content" style="display:none">
+    <div class="card">
+      <h3>내가 쓴 글</h3>
+      <div id="my-posts" class="list"><div class="meta">불러오는 중...</div></div>
+    </div>
+  </section>
+
+  <!-- 설정 -->
+  <section id="tab-settings" class="tab-content" style="display:none">
+    <div class="card">
+      <h3>계정 설정</h3>
+      <p style="color:var(--muted)">Cloudinary 프로필 사진 업로드 및 기타 기능이 포함되어 있습니다.</p>
+    </div>
+  </section>
+</div>
+
+<!-- Cloudinary 위젯 -->
+<script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+<script type="module" src="js/profile.js"></script>
+</body>
+</html>

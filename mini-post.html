@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Mini홈 글 보기</title>
+<style>
+body{background:#0b1020;color:#e5e7eb;font-family:Inter,sans-serif;margin:0;padding:20px}
+.card{background:#121831;padding:16px;border-radius:12px;margin-bottom:16px}
+.btn{padding:8px 14px;border-radius:8px;background:#6d28d9;color:#fff;border:0;cursor:pointer}
+.field{width:100%;padding:10px;border-radius:8px;border:1px solid #333;background:#0d1430;color:#e5e7eb;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2 id="post-title"></h2>
+  <div id="post-meta" style="color:#9aa3b2;font-size:13px;margin-bottom:10px"></div>
+  <div id="post-body" style="white-space:pre-wrap"></div>
+</div>
+
+<div class="card">
+  <h3>댓글</h3>
+  <div id="cmt-list"></div>
+  <textarea id="cmt-input" class="field" rows="3" placeholder="댓글 입력"></textarea>
+  <button id="cmt-add" class="btn">등록</button>
+</div>
+
+<script type="module" src="/js/mini-post.js"></script>
+</body>
+</html>
